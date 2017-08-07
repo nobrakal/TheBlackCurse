@@ -1,26 +1,43 @@
 import UI.HSCurses.Curses
+import UI.HSCurses.CursesHelper
 import System.Exit
 
 main :: IO ()
 main = do
-  win <- initScr --Start
-  echo False
-  wAddStr win $ "Salut ça va \n"
-  refresh
+  initScr --Start
+  echo False -- Disable echo
 
-  mainLoop win
+  let msgwin_width = 5
+  x_y_width <- scrSize
+  mainwin <- newWin ((fst x_y_width) - msgwin_width) 0 msgwin_width 0
+  msgwin <- newWin msgwin_width 0 0 0
 
-  endWin -- Stop
-  putStrLn "FIN"
+  wMove mainwin 1 1
+  wMove msgwin 1 1
 
-mainLoop :: Window -> IO ()
-mainLoop win = do
+  mainLoop mainwin msgwin
+
+mainLoop :: Window -> Window -> IO ()
+mainLoop mainwin msgwin = do
   inp <- getCh
-  useInput win inp
-  refresh
-  mainLoop win
+
+  werase msgwin
+  werase mainwin
+
+  useInput msgwin inp
+
+  refreshWindow mainwin
+  refreshWindow msgwin
+
+  mainLoop mainwin msgwin
 
 useInput :: Window -> Key -> IO()
-useInput win s
-  | s == KeyChar 'q' = (endWin >> exitSuccess)
-  | otherwise = wAddStr win $ (show s) ++ "\n"
+useInput msgwin s
+  | s == KeyChar '\ESC' = (endWin >> exitSuccess) -- Exit when ESC is pressed
+  | elem (head (displayKey s)) ['q','s','z','d'] = mvWAddStr msgwin 1 1 "A direction was pressed" -- moveCharacter s
+  | otherwise = mvWAddStr msgwin 1 1 $ displayKey s
+
+refreshWindow :: Window -> IO()
+refreshWindow win = do
+  wBorder win defaultBorder
+  wRefresh win
