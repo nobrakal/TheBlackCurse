@@ -16,36 +16,29 @@ main =
     msgWin <- newWindow (msgWin_width - 2) ((snd y_x_width)-2) 1 1-- msg window
     mainWin <- newWindow ((fst y_x_width) - msgWin_width-2) ((snd y_x_width)-2) (msgWin_width+1) 1 -- bottom window
 
-    --makeBorders mainWin -- draw the default borders
-    --makeBorders msgWin
     makeBorders stdscr (0,0) (msgWin_width) (snd y_x_width) -- Make borders of msgWin
     makeBorders stdscr (msgWin_width,0) ((fst y_x_width) - msgWin_width-1) (snd y_x_width) -- Make borders of mainWin
 
-    --updateWindow stdscr $ setTouched False -- DO NOT UPDATE stdscr, it will blank evrything
-
     render
 
-    {- getEvent stdscr Nothing
-    return () -}
-    mainLoop mainWin msgWin
+    mainLoop stdcr mainWin msgWin
 
-mainLoop :: Window -> Window -> Curses ()
-mainLoop mainWin msgWin = do
-  stdscr <- defaultWindow
+mainLoop :: Window -> Window -> Window -> Curses ()
+mainLoop stdscr mainWin msgWin = do
   inp <- getEvent stdscr Nothing
 
-  if (inp == (Just (EventCharacter 'q'))) || (inp == (Just (EventCharacter 'Q'))) || (inp == (Just (EventCharacter 'q'))) || (inp == (Just (EventCharacter '\ESC'))) then
+  if (inp == (Just (EventCharacter 'q'))) || (inp == (Just (EventCharacter 'Q'))) || (inp == (Just (EventCharacter '\ESC'))) then
    return ()
   else
     useInput msgWin inp >>
     render >>
-    mainLoop mainWin msgWin
+    mainLoop stdscr mainWin msgWin
 
 
 useInput :: Window -> Maybe Event -> Curses ()
 useInput win (Just (EventSpecialKey s))
   | (s==KeyUpArrow) || (s==KeyDownArrow) || (s==KeyLeftArrow) || (s==KeyRightArrow) = drawMsg win "A direction was pressed" -- moveCharacter s
-useInput win (Just (EventUnknown s)) = drawMsg win "ERROR WITH EVENT"
+useInput win (Just (EventUnknown s)) = drawMsg win $ "ERROR WITH EVENT" ++ show s
 useInput win s = drawMsg win (show s)
 
 -- Draw a message on the msg window (clear all before)
