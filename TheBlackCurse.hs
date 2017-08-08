@@ -1,7 +1,11 @@
 import UI.NCurses
 import System.Exit
+import Data.Ratio
 
 -- NOTE: Curses is a wrapper for IO
+
+msgWin_ratio :: Rational
+msgWin_ratio = (20%100)
 
 main :: IO ()
 main =
@@ -10,18 +14,19 @@ main =
     setCursorMode CursorInvisible -- No more cursor
     stdscr <- defaultWindow
 
-    let msgWin_width = 5
     y_x_width <- screenSize
 
-    msgWin <- newWindow (msgWin_width - 2) ((snd y_x_width)-2) 1 1-- msg window
-    mainWin <- newWindow ((fst y_x_width) - msgWin_width-2) ((snd y_x_width)-2) (msgWin_width+1) 1 -- bottom window
+    let msgWin_height =  div (((fst y_x_width) * numerator msgWin_ratio))  (denominator msgWin_ratio)
 
-    makeBorders stdscr (0,0) (msgWin_width) (snd y_x_width) -- Make borders of msgWin
-    makeBorders stdscr (msgWin_width,0) ((fst y_x_width) - msgWin_width-1) (snd y_x_width) -- Make borders of mainWin
+    msgWin <- newWindow (msgWin_height - 2) ((snd y_x_width)-2) 1 1-- msg window
+    mainWin <- newWindow ((fst y_x_width) - msgWin_height-2) ((snd y_x_width)-2) (msgWin_height+1) 1 -- bottom window
+
+    makeBorders stdscr (0,0) (msgWin_height) (snd y_x_width) -- Make borders of msgWin
+    makeBorders stdscr (msgWin_height,0) ((fst y_x_width) - msgWin_height-1) (snd y_x_width) -- Make borders of mainWin
 
     render
 
-    mainLoop stdcr mainWin msgWin
+    mainLoop stdscr mainWin msgWin
 
 mainLoop :: Window -> Window -> Window -> Curses ()
 mainLoop stdscr mainWin msgWin = do
@@ -30,16 +35,17 @@ mainLoop stdscr mainWin msgWin = do
   if (inp == (Just (EventCharacter 'q'))) || (inp == (Just (EventCharacter 'Q'))) || (inp == (Just (EventCharacter '\ESC'))) then
    return ()
   else
-    useInput msgWin inp >>
+    useInput mainWin msgWin inp >>
     render >>
     mainLoop stdscr mainWin msgWin
 
 
-useInput :: Window -> Maybe Event -> Curses ()
-useInput win (Just (EventSpecialKey s))
-  | (s==KeyUpArrow) || (s==KeyDownArrow) || (s==KeyLeftArrow) || (s==KeyRightArrow) = drawMsg win "A direction was pressed" -- moveCharacter s
-useInput win (Just (EventUnknown s)) = drawMsg win $ "ERROR WITH EVENT" ++ show s
-useInput win s = drawMsg win (show s)
+useInput :: Window -> Window -> Maybe Event -> Curses ()
+useInput mainWin msgWwin (Just (EventSpecialKey s))
+  | (s==KeyUpArrow) || (s==KeyDownArrow) || (s==KeyLeftArrow) || (s==KeyRightArrow) = drawMsg msgWwin "A direction was pressed" -- moveCharacter s
+useInput mainWin msgWwin (Just (EventUnknown s)) = drawMsg msgWwin $ "ERROR WITH EVENT" ++ show s
+--useInput mainWin msgWwin (Just (EventResized) = resize mainWin
+useInput mainWin msgWwin s = drawMsg msgWwin (show s)
 
 -- Draw a message on the msg window (clear all before)
 drawMsg :: Window -> String -> Curses ()
