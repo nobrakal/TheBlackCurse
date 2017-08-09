@@ -1,6 +1,6 @@
 import UI.NCurses
 import System.Exit
-import Data.Ratio
+import Data.List
 
 import LevelMap
 
@@ -9,11 +9,20 @@ import LevelMap
 msgWin_height :: Integer
 msgWin_height = 5
 
+data Game = Game {
+  stdscr :: Window,
+  mainWin :: Window,
+  msgWin :: Window,
+  m :: LevelMap
+}
+
 main :: IO ()
-main =
+main = do
+  map1 <- loadMap "./maps/map1.txt"
+
   runCurses $ do --Start
     setEcho False -- Disable echo
-    setCursorMode CursorInvisible -- No more cursor
+    --setCursorMode CursorInvisible -- No more cursor
     stdscr <- defaultWindow
 
     y_x_width <- screenSize
@@ -21,40 +30,43 @@ main =
     updateBorders stdscr y_x_width
 
     let msdim = calculateMsgWinSize y_x_width
-    msgWin <- newWindow (fst msdim) (snd msdim) 1 1 -- msg window
     let mwdim = calculateMainWinSize y_x_width
+    msgWin <- newWindow (fst msdim) (snd msdim) 1 1 -- msg window
     mainWin <- newWindow (fst mwdim) (snd mwdim) (msgWin_height+1) 1 -- bottom window
 
+    drawTab mainWin $ getCurrentDisplay map1 (0,0) (y_x_width)
+    -- updateWindow stdscr $  moveCursor (fst y_x_width-1) (snd y_x_width-1)
     render
 
-    mainLoop stdscr mainWin msgWin
+    mainLoop (Game stdscr mainWin msgWin map1) -- Run mainLoop
 
-mainLoop :: Window -> Window -> Window -> Curses ()
-mainLoop stdscr mainWin msgWin = do
+mainLoop :: Game -> Curses ()
+mainLoop (Game stdscr mainWin msgWin map1) = do
   inp <- getEvent stdscr Nothing
 
   if (inp == (Just (EventCharacter 'q'))) || (inp == (Just (EventCharacter 'Q'))) || (inp == (Just (EventCharacter '\ESC'))) then
    return ()
   else do
-    useInput mainWin msgWin inp
+    useInput (Game stdscr mainWin msgWin map1)  inp
     render
-    mainLoop stdscr mainWin msgWin
+    mainLoop (Game stdscr mainWin msgWin map1)
 
 
-useInput :: Window -> Window -> Maybe Event -> Curses ()
-useInput mainWin msgWin (Just (EventSpecialKey s))
-  | (s==KeyUpArrow) || (s==KeyDownArrow) || (s==KeyLeftArrow) || (s==KeyRightArrow) = drawClearMsg msgWin "A direction was pressed" -- moveCharacter s
-useInput mainWin msgWin (Just (EventUnknown s)) = drawClearMsg msgWin $ "ERROR WITH EVENT" ++ show s
-useInput mainWin msgWin (Just (EventResized)) = do
+useInput :: Game -> Maybe Event -> Curses ()
+useInput game (Just (EventSpecialKey s))
+  | (s==KeyUpArrow) || (s==KeyDownArrow) || (s==KeyLeftArrow) || (s==KeyRightArrow) = drawClearMsg (msgWin game) "A direction was pressed" -- moveCharacter s
+useInput game (Just (EventUnknown s)) = drawClearMsg (msgWin game) $ "ERROR WITH EVENT" ++ show s -- ERROR
+useInput (Game stdscr mainWin msgWin map1) (Just (EventResized)) = do -- Resized
   y_x_width <- screenSize
-  stdscr <- defaultWindow
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
   updateWindow msgWin $ resizeWindow (fst msdim) (snd msdim)
-  updateWindow mainWin $ (resizeWindow (fst mwdim) (snd mwdim)) >> (moveWindow (fst msdim) 1)
+  updateWindow mainWin $ (resizeWindow (fst mwdim) (snd mwdim)) -- >> (moveWindow ((fst msdim)+3) 1)
   updateBorders stdscr y_x_width
+  drawTab mainWin $ getCurrentDisplay map1 (0,0) (y_x_width)
+  drawClearMsg msgWin "Resized"
 
-useInput mainWin msgWin s = drawClearMsg msgWin (show s)
+useInput game s = drawClearMsg (msgWin game) (show s) -- Any other input
 
 -- Draw a message on the window (clear all before)
 drawClearMsg :: Window -> String -> Curses ()
@@ -75,7 +87,7 @@ makeBorders win (pos_y,pos_x) y x = updateWindow win $ do
   moveCursor (pos_y+y-1) (pos_x+1)
   drawLineH (Just glyphLineH) $ x-2 -- Horizontal bottom line
   moveCursor (pos_y+y-1) (pos_x+x-1)
-  drawGlyph glyphCornerLR
+  drawLineH (Just glyphCornerLR) 1 -- drawGlyph move the cursor, we don't want it to go out of the window; drawlineH don't
   moveCursor (pos_y) (pos_x+x-1)
   drawGlyph glyphCornerUR
   moveCursor (pos_y+1) (pos_x+x-1)
@@ -94,4 +106,7 @@ updateBorders stdscr y_x_width = do
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
   makeBorders stdscr (0,0) ((fst msdim) +2) ((snd msdim)+2) -- Make borders of msgWin
-  makeBorders stdscr (msgWin_height,0) ((fst mwdim) +1) ((snd mwdim)+2) -- Make borders of mainWin
+  makeBorders stdscr (msgWin_height,0) ((fst mwdim) +2) ((snd mwdim)+2) -- Make borders of mainWin
+
+drawTab :: Window -> [String] -> Curses ()
+drawTab win tab = drawClearMsg win $ intercalate "\n" tab
