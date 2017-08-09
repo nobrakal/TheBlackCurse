@@ -2,6 +2,8 @@ import UI.NCurses
 import System.Exit
 import Data.Ratio
 
+import LevelMap
+
 -- NOTE: Curses is a wrapper for IO
 
 msgWin_height :: Integer
@@ -49,8 +51,7 @@ useInput mainWin msgWin (Just (EventResized)) = do
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
   updateWindow msgWin $ resizeWindow (fst msdim) (snd msdim)
-  updateWindow mainWin $ moveWindow (fst msdim) 1
-  updateWindow mainWin $ resizeWindow (fst mwdim) (snd mwdim)
+  updateWindow mainWin $ (resizeWindow (fst mwdim) (snd mwdim)) >> (moveWindow (fst msdim) 1)
   updateBorders stdscr y_x_width
 
 useInput mainWin msgWin s = drawClearMsg msgWin (show s)
