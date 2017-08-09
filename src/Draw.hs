@@ -18,7 +18,7 @@ drawClearMsg win str = updateWindow win $ do
 
 -- Draw a tab of String
 drawTab :: Window -> [String] -> Curses ()
-drawTab win tab = drawClearMsg win $ intercalate "\n" tab
+drawTab win tab = drawClearMsg win $ init (concat tab)
 
 -- Draw borders of a rectangle starting at (pos_x,pos_y) with y rows and x columns on win
 makeBorders :: Window -> (Integer,Integer) -> Integer -> Integer -> Curses ()
@@ -42,4 +42,4 @@ makeBorders win (pos_y,pos_x) y x = updateWindow win $ do
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
 getCurrentDisplay :: [[Char]] -> (Integer,Integer) -> (Integer,Integer) -> [[Char]]
-getCurrentDisplay tab (starty,startx) (height,width)  = take (fromIntegral height) $ map (take (fromIntegral width)) $ drop (fromIntegral starty) $ map (drop (fromIntegral startx)) tab
+getCurrentDisplay tab (starty,startx) (height,width) = take (fromIntegral height) $ map (take (fromIntegral width)) $ drop (fromIntegral starty) $ map (drop (fromIntegral startx)) tab

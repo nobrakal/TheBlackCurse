@@ -8,5 +8,5 @@ data LevelMap = LevelMap {levelMap :: [[Char]],
 loadMap :: FilePath -> IO LevelMap
 loadMap path = do
   file <- (readFile path)
-  let file_map = lines file
+  let file_map = map (++ "\n") $lines file
   return (LevelMap file_map (0,0))
