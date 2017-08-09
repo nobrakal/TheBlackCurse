@@ -9,6 +9,8 @@ where
 import UI.NCurses
 import Data.List
 
+import LevelMap
+
 -- Draw a message on the window if possible (clear all before)
 drawClearMsg :: Window -> String -> Curses ()
 drawClearMsg win str = updateWindow win $ do
