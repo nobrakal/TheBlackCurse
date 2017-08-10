@@ -40,7 +40,7 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
 
-    drawTab mainWin $ getCurrentDisplay (levelMap map1) (Point 0 0) mwdim
+    moveCamera mainWin map1
     render
 
     mainLoop (State (Game stdscr mainWin msgWin map1) $ Just $ drawClearMsg msgWin (show (maxyx map1))) -- Run mainLoop
@@ -88,7 +88,20 @@ updateBorders stdscr y_x_width = do
   makeBorders stdscr (Point 0 0) (Point ((y msdim) +2) ((x msdim)+2)) -- Make borders of msgWin
   makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
-  -- Move the camera if possible
+-- Test if we can move the camera then does it else say it cannot
+testAndMove :: Game -> Key -> State
+testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx )) s =
+  let newul = addPoint (getDir s) currul
+      newbr = addPoint (getDir s) currbr
+  in let isOk = isOnDisplayableMap (LevelMap m currul currbr maxyx) newul
+    in let posOkUl = if isOk then newul else currul
+           posOkBr = if isOk then newbr else currbr
+           action = if isOk
+                      then Just $ (moveCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
+                      else Just $ drawClearMsg msgWin "Could not move the camera"
+                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx)) action
+
+-- Move the camera (do not do any test)
 moveCamera :: Window -> LevelMap -> Curses()
 moveCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
@@ -99,18 +112,6 @@ getDir s
   | s==KeyLeftArrow = Point 0 (-1)
   | s==KeyRightArrow = Point 0 1
   | otherwise = Point 0 0
-
-testAndMove :: Game -> Key -> State
-testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx )) s =
-  let newul = addPoint (getDir s) currul
-      newbr = addPoint (getDir s) currbr
-  in let isOk = isOnScreen (LevelMap m currul currbr maxyx) newul
-    in let posOkUl = if isOk then newul else currul
-           posOkBr = if isOk then newbr else currbr
-           action = if isOk
-                      then Just $ (moveCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
-                      else Just $ drawClearMsg msgWin "Could not move the camera"
-                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx)) action
 
 getScreenSize :: Curses Point
 getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))

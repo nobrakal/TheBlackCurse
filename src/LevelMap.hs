@@ -3,7 +3,7 @@ module LevelMap (
   loadMap,
   Point (..),
   addPoint,
-  isOnScreen)
+  isOnDisplayableMap)
 where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
@@ -29,5 +29,5 @@ addPoint :: Point -> Point -> Point
 addPoint (Point y1 x1) (Point y2 x2) = Point (y1 + y2) (x1 + x2)
 
 -- Return true if the point is on the map
-isOnScreen :: LevelMap -> Point -> Bool
-isOnScreen (LevelMap _ _ (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < (maxx-sx)) && (y <(maxy-sy))
+isOnDisplayableMap :: LevelMap -> Point -> Bool
+isOnDisplayableMap (LevelMap _ _ (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < (maxx-sx)) && (y <(maxy-sy))
