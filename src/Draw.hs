@@ -23,8 +23,8 @@ drawTab :: Window -> [String] -> Curses ()
 drawTab win tab = drawClearMsg win $ init (concat tab)
 
 -- Draw borders of a rectangle starting at (pos_x,pos_y) with y rows and x columns on win
-makeBorders :: Window -> (Integer,Integer) -> Integer -> Integer -> Curses ()
-makeBorders win (pos_y,pos_x) y x = updateWindow win $ do
+makeBorders :: Window -> Point -> Point -> Curses ()
+makeBorders win (Point pos_y' pos_x') (Point y' x') = updateWindow win $ do
   moveCursor pos_y pos_x
   drawGlyph glyphCornerUL
   drawLineH (Just glyphLineH) $ x-2 -- Horizontal top line
@@ -41,7 +41,11 @@ makeBorders win (pos_y,pos_x) y x = updateWindow win $ do
   moveCursor (pos_y+1) (pos_x+x-1)
   drawLineV (Just glyphLineV) $ y-2 -- Vertical Right line
   moveCursor pos_y pos_x -- Reset cursor pos
+  where pos_x = toInteger pos_x'
+        pos_y = toInteger pos_y'
+        x = toInteger x'
+        y = toInteger y'
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
-getCurrentDisplay :: [[Char]] -> (Integer,Integer) -> (Integer,Integer) -> [[Char]]
-getCurrentDisplay tab (starty,startx) (height,width) = take (fromIntegral height) $ map (take (fromIntegral width)) $ drop (fromIntegral starty) $ map (drop (fromIntegral startx)) tab
+getCurrentDisplay :: [[Char]] -> Point -> Point -> [[Char]]
+getCurrentDisplay tab (Point starty startx) (Point height width) = take height $ map (take width) $ drop starty $ map (drop startx) tab

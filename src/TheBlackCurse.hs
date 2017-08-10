@@ -6,7 +6,7 @@ import Draw
 
 -- NOTE: Curses is a wrapper for IO
 
-msgWin_height :: Integer
+msgWin_height :: Int
 msgWin_height = 5
 
 data Game = Game {
@@ -23,26 +23,27 @@ data State = State {
 
 main :: IO ()
 main = do
-  map1 <- loadMap "./maps/map1.txt"
+  map1' <- loadMap "./maps/map1.txt"
 
   runCurses $ do --Start
     setEcho False -- Disable echo
     setCursorMode CursorInvisible -- No more cursor
     stdscr <- defaultWindow
 
-    y_x_width <- screenSize
+    y_x_width <- getScreenSize
 
     updateBorders stdscr y_x_width
+    let map1 = (LevelMap (levelMap (map1')) (Point 0 0) y_x_width (maxyx map1')) --Init the map with screen size
 
     let msdim = calculateMsgWinSize y_x_width
     let mwdim = calculateMainWinSize y_x_width
-    msgWin <- newWindow (fst msdim) (snd msdim) 1 1 -- msg window
-    mainWin <- newWindow (fst mwdim) (snd mwdim) (msgWin_height+1) 1 -- bottom window
+    msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
+    mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
 
-    drawTab mainWin $ getCurrentDisplay (levelMap map1) (0,0) (mwdim)
+    drawTab mainWin $ getCurrentDisplay (levelMap map1) (Point 0 0) mwdim
     render
 
-    mainLoop (State (Game stdscr mainWin msgWin map1) $ Just $ drawClearMsg msgWin "Welcome") -- Run mainLoop
+    mainLoop (State (Game stdscr mainWin msgWin map1) $ Just $ drawClearMsg msgWin (show (maxyx map1))) -- Run mainLoop
 
 mainLoop :: State -> Curses ()
 mainLoop (State game (Just todo))= do
@@ -56,41 +57,60 @@ mainLoop (State _ Nothing) = return ()
 useInput :: Game -> Maybe Event -> State
 useInput game (Just (EventCharacter c))
   | c=='Q' || c=='q' || c=='\ESC' = State game Nothing
-useInput (Game stdscr mainWin msgWin (LevelMap map1 (cx, cy))) (Just (EventSpecialKey s)) -- BUG Ajouter tests sur positions
-  | (s==KeyUpArrow)= State (Game stdscr mainWin msgWin (LevelMap map1 (cx-1, cy))) (Just (moveCamera mainWin (LevelMap map1 (cx, cy)) (-1,0)))
-  | (s==KeyDownArrow)= State (Game stdscr mainWin msgWin (LevelMap map1 (cx+1, cy))) (Just (moveCamera mainWin (LevelMap map1 (cx, cy)) (1,0)))
-  | (s==KeyLeftArrow)= State (Game stdscr mainWin msgWin (LevelMap map1 (cx, cy-1))) (Just (moveCamera mainWin (LevelMap map1 (cx, cy)) (0,-1)))
-  | (s==KeyRightArrow)= State (Game stdscr mainWin msgWin (LevelMap map1 (cx, cy+1))) (Just (moveCamera mainWin (LevelMap map1 (cx, cy)) (0,1)))
+useInput state (Just (EventSpecialKey s)) = testAndMove state s
 useInput game (Just (EventResized)) = State game $ Just $ updateScreenSize game
 useInput game (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
 useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
 updateScreenSize :: Game -> Curses ()
 updateScreenSize (Game stdscr mainWin msgWin map1) =  do
-  y_x_width <- screenSize
+  y_x_width <- getScreenSize
   updateWindow mainWin clear
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
-  updateWindow msgWin $ resizeWindow (fst msdim) (snd msdim)
-  updateWindow mainWin $ (resizeWindow (fst mwdim) (snd mwdim))
+  updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
+  updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
   updateBorders stdscr y_x_width
-  drawTab mainWin $ getCurrentDisplay (levelMap map1) (0,0) (mwdim)
+  drawTab mainWin $ getCurrentDisplay (levelMap map1) (Point 0 0) (mwdim)
   drawClearMsg msgWin "Resized"
 
-calculateMainWinSize :: (Integer, Integer) -> (Integer, Integer)
-calculateMainWinSize y_x_width = (((fst y_x_width) - msgWin_height-2),((snd y_x_width)-2))
+calculateMainWinSize :: Point -> Point
+calculateMainWinSize (Point y x ) = Point (y - msgWin_height-2) (x-2)
 
-calculateMsgWinSize :: (Integer, Integer) -> (Integer, Integer)
-calculateMsgWinSize y_x_width = ((msgWin_height - 2),((snd y_x_width)-2))
+calculateMsgWinSize :: Point -> Point
+calculateMsgWinSize (Point _ x ) = Point (msgWin_height - 2) (x-2)
 
-updateBorders :: Window -> (Integer,Integer) -> Curses ()
+updateBorders :: Window -> Point -> Curses ()
 updateBorders stdscr y_x_width = do
   updateWindow stdscr clear
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
-  makeBorders stdscr (0,0) ((fst msdim) +2) ((snd msdim)+2) -- Make borders of msgWin
-  makeBorders stdscr (msgWin_height,0) ((fst mwdim) +2) ((snd mwdim)+2) -- Make borders of mainWin
+  makeBorders stdscr (Point 0 0) (Point ((y msdim) +2) ((x msdim)+2)) -- Make borders of msgWin
+  makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
   -- Move the camera if possible
-moveCamera :: Window -> LevelMap -> (Integer,Integer) -> Curses()
-moveCamera win (LevelMap map1 (cy,cx)) (y,x) = screenSize >>= \arg -> (drawTab win $ getCurrentDisplay map1 ((y+cy),(x+cx)) (calculateMainWinSize arg))
+moveCamera :: Window -> LevelMap -> Point -> Curses()
+moveCamera win (LevelMap map1 (Point cy cx) _ _) (Point y x) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 (Point (y+cy) (x+cx)) (calculateMainWinSize arg)
+
+getDir :: Key -> Point
+getDir s
+  | s==KeyUpArrow = Point (-1) 0
+  | s==KeyDownArrow = Point 1 0
+  | s==KeyLeftArrow = Point 0 (-1)
+  | s==KeyRightArrow = Point 0 1
+  | otherwise = Point 0 0
+
+testAndMove :: Game -> Key -> State
+testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx )) s =
+  let newul = addPoint (getDir s) currul
+      newbr = addPoint (getDir s) currbr
+  in let isOk = isOnScreen (LevelMap m currul currbr maxyx) newul
+    in let posOkUl = if isOk then newul else currul
+           posOkBr = if isOk then newbr else currbr
+           action = if isOk
+                      then Just $ (moveCamera mainWin (LevelMap m currul currbr maxyx) newul) >> drawClearMsg msgWin "Camera moved"
+                      else Just $ drawClearMsg msgWin "Could not move the camera"
+                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx)) action
+
+getScreenSize :: Curses Point
+getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))
