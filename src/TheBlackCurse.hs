@@ -89,8 +89,8 @@ updateBorders stdscr y_x_width = do
   makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
   -- Move the camera if possible
-moveCamera :: Window -> LevelMap -> Point -> Curses()
-moveCamera win (LevelMap map1 (Point cy cx) _ _) (Point y x) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 (Point (y+cy) (x+cx)) (calculateMainWinSize arg)
+moveCamera :: Window -> LevelMap -> Curses()
+moveCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
 getDir :: Key -> Point
 getDir s
@@ -108,7 +108,7 @@ testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx )) s =
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
            action = if isOk
-                      then Just $ (moveCamera mainWin (LevelMap m currul currbr maxyx) newul) >> drawClearMsg msgWin "Camera moved"
+                      then Just $ (moveCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
                       in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx)) action
 
