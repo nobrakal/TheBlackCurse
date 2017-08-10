@@ -30,4 +30,4 @@ addPoint (Point y1 x1) (Point y2 x2) = Point (y1 + y2) (x1 + x2)
 
 -- Return true if the point is on the map
 isOnDisplayableMap :: LevelMap -> Point -> Bool
-isOnDisplayableMap (LevelMap _ _ (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < (maxx-sx)) && (y <(maxy-sy))
+isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < (maxx-sx+cx)) && (y <(maxy-sy+cy))

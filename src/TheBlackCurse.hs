@@ -33,12 +33,13 @@ main = do
     y_x_width <- getScreenSize
 
     updateBorders stdscr y_x_width
-    let map1 = (LevelMap (levelMap (map1')) (Point 0 0) y_x_width (maxyx map1')) --Init the map with screen size
 
     let msdim = calculateMsgWinSize y_x_width
     let mwdim = calculateMainWinSize y_x_width
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
+
+    let map1 = (LevelMap (levelMap (map1')) (Point 0 0) mwdim (maxyx map1')) --Init the map with screen size
 
     moveCamera mainWin map1
     render
