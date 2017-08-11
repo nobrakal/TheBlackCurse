@@ -8,7 +8,6 @@ where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
 
-
 data LevelMap = LevelMap {levelMap :: [[Char]],
   currul :: Point, -- Current upper left corner of the displayed area
   currbl :: Point, -- Current bottom right corner of the displayed area

@@ -1,5 +1,6 @@
 import UI.NCurses
 import System.Exit
+import System.Environment
 import Data.ConfigFile
 
 import LevelMap
@@ -24,7 +25,9 @@ data State = State {
 
 main :: IO ()
 main = do
-  map1' <- loadMap "./maps/map1.txt"
+  args <- getArgs
+
+  map1' <- loadMap $ if (1 == length args) then (head args) else "../maps/map1.txt"
 
   runCurses $ do --Start
     setEcho False -- Disable echo
