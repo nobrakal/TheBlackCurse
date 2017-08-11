@@ -1,5 +1,6 @@
 import UI.NCurses
 import System.Exit
+import Data.ConfigFile
 
 import LevelMap
 import Draw
