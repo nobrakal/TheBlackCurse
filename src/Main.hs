@@ -1,7 +1,10 @@
 import UI.NCurses
 import System.Exit
 import System.Environment
+import System.IO.Error
 import Data.ConfigFile
+import Control.Exception
+import Control.Monad
 
 import LevelMap
 import Draw
@@ -25,9 +28,10 @@ data State = State {
 
 main :: IO ()
 main = do
-  args <- getArgs
-
-  map1' <- loadMap $ if (1 == length args) then (head args) else "../maps/map1.txt"
+  args <- getArgs -- BUG dessous
+  e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1==length args) then (head args) else "../maps/map1.txt")
+  let file = either (return ".") id e
+  map1' <- loadMap file
 
   runCurses $ do --Start
     setEcho False -- Disable echo
@@ -43,12 +47,14 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
 
+    let action = Just $ drawClearMsg msgWin $ either ("Map not found") (const "Welcome") e
+
     let map1 = (LevelMap (levelMap (map1')) (Point 0 0) mwdim (maxyx map1')) --Init the map with screen size
 
     moveCamera mainWin map1
     render
 
-    mainLoop (State (Game stdscr mainWin msgWin map1) $ Just $ drawClearMsg msgWin (show (maxyx map1))) -- Run mainLoop
+    mainLoop (State (Game stdscr mainWin msgWin map1) action) -- Run mainLoop
 
 mainLoop :: State -> Curses ()
 mainLoop (State game (Just todo))= do

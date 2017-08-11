@@ -14,9 +14,8 @@ data LevelMap = LevelMap {levelMap :: [[Char]],
   maxyx :: Point -- Height and width of the map
 }
 
-loadMap :: FilePath -> IO LevelMap
-loadMap path = do
-  file <- (readFile path)
+loadMap :: String -> IO LevelMap
+loadMap file = do
   let file_map = map (++ "\n") $lines file
   return (LevelMap file_map (Point 0 0) (Point 0 0) (Point (length file_map) (getmaxLength file_map)))
 
