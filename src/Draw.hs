@@ -1,8 +1,7 @@
 module Draw
   (drawClearMsg,
   drawTab,
-  makeBorders,
-  getCurrentDisplay)
+  makeBorders)
 
 where
 
@@ -19,8 +18,8 @@ drawClearMsg win str = updateWindow win $ do
   drawString $ if ((fromIntegral ((fst y_x_width)*(snd y_x_width))) > (length str)) then str else "Msg too big"
 
 -- Draw a tab of String
-drawTab :: Window -> [String] -> Curses ()
-drawTab win tab = drawClearMsg win $ init (concat tab)
+drawTab :: Window -> [[String]] -> Curses ()
+drawTab win tab = drawClearMsg win $ init (concat (map (map head) tab))
 
 -- Draw borders of a rectangle starting at (pos_x,pos_y) with y rows and x columns on win
 makeBorders :: Window -> Point -> Point -> Curses ()
@@ -45,7 +44,3 @@ makeBorders win (Point pos_y' pos_x') (Point y' x') = updateWindow win $ do
         pos_y = toInteger pos_y'
         x = toInteger x'
         y = toInteger y'
-
--- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
-getCurrentDisplay :: [[Char]] -> Point -> Point -> [[Char]]
-getCurrentDisplay tab (Point starty startx) (Point height width) = take height $ map (take width) $ drop starty $ map (drop startx) tab

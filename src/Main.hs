@@ -32,7 +32,7 @@ data State = State {
 
 main :: IO ()
 main = do
-  args <- getArgs -- BUG dessous
+  args <- getArgs
   e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1==length args) then (head args) else "../maps/map1.txt")
   let file = either (return ".") id e
   map1' <- loadMap file
@@ -51,10 +51,8 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
 
-    let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
-
     let map1 = (LevelMap (levelMap (map1')) (Point 0 0) mwdim (maxyx map1')) --Init the map with screen size
-
+    let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
     let keyboard = defaultKeyboard
 
     let player = Player (Point 0 0) 10
