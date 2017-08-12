@@ -16,18 +16,21 @@ data Keyboard = Keyboard {
   cLeft :: Event,
   cRight :: Event,
   loadM :: Event,
-  exit :: Event
-}
+  exit :: Event,
+  help :: Event
+} deriving (Show)
 
 defaultKeyboard :: Keyboard
-defaultKeyboard = (Keyboard (EventSpecialKey KeyUpArrow)
- (EventSpecialKey KeyDownArrow)
- (EventSpecialKey KeyLeftArrow)
- (EventSpecialKey KeyRightArrow)
+defaultKeyboard = (Keyboard
  (EventCharacter 'z')
  (EventCharacter 's')
  (EventCharacter 'q')
  (EventCharacter 'd')
+ (EventSpecialKey KeyUpArrow)
+ (EventSpecialKey KeyDownArrow)
+ (EventSpecialKey KeyLeftArrow)
+ (EventSpecialKey KeyRightArrow)
  (EventCharacter 'l')
  (EventCharacter '\ESC')
+ (EventCharacter 'h')
  )

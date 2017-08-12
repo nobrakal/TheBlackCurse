@@ -70,12 +70,18 @@ mainLoop (State game (Just todo))= do
 mainLoop (State _ Nothing) = return ()
 
 useInput :: Game -> Maybe Event -> State
-useInput game (Just (EventCharacter c))
-  | c=='Q' || c=='q' || c=='\ESC' = State game Nothing
-useInput game (Just (EventSpecialKey s)) = testAndMove game s
+useInput game (Just (EventCharacter c)) = useInputKeyboard game (EventCharacter c)
+useInput game (Just (EventSpecialKey s)) = useInputKeyboard game (EventSpecialKey s)
 useInput game (Just (EventResized)) = State game $ Just $ updateScreenSize game
 useInput game (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
 useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
+
+useInputKeyboard :: Game -> Event -> State
+useInputKeyboard (Game stdscr mainWin msgWin map1 k) e
+  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMove (Game stdscr mainWin msgWin map1 k) e
+  | e == help k = State (Game stdscr mainWin msgWin map1 k) $ Just $ drawClearMsg msgWin (show k)
+  | e == exit k = State (Game stdscr mainWin msgWin map1 k) Nothing
+  | otherwise = State (Game stdscr mainWin msgWin map1 k) $ Just $ drawClearMsg msgWin "Command not found"
 
 updateScreenSize :: Game -> Curses ()
 updateScreenSize (Game stdscr mainWin msgWin map1 _) =  do
@@ -104,10 +110,10 @@ updateBorders stdscr y_x_width = do
   makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
 -- Test if we can move the camera then does it else say it cannot
-testAndMove :: Game -> Key -> State
+testAndMove :: Game -> Event -> State
 testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx ) k) s =
-  let newul = addPoint (getDir s) currul
-      newbr = addPoint (getDir s) currbr
+  let newul = addPoint (getDir k s) currul
+      newbr = addPoint (getDir k s) currbr
   in let isOk = isOnDisplayableMap (LevelMap m currul currbr maxyx) newul
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
@@ -120,12 +126,12 @@ testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx ) k) s =
 moveCamera :: Window -> LevelMap -> Curses()
 moveCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
-getDir :: Key -> Point
-getDir s
-  | s==KeyUpArrow = Point (-1) 0
-  | s==KeyDownArrow = Point 1 0
-  | s==KeyLeftArrow = Point 0 (-1)
-  | s==KeyRightArrow = Point 0 1
+getDir :: Keyboard -> Event -> Point
+getDir k s
+  | s== up k || s == cUp k  = Point (-1) 0
+  | s== down k || s == cDown k  = Point 1 0
+  | s== left k || s == cLeft k  = Point 0 (-1)
+  | s== right k || s == cRight k = Point 0 1
   | otherwise = Point 0 0
 
 getScreenSize :: Curses Point
