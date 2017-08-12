@@ -77,11 +77,11 @@ useInput game (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin
 useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
 useInputKeyboard :: Game -> Event -> State
-useInputKeyboard (Game stdscr mainWin msgWin map1 k) e
-  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMove (Game stdscr mainWin msgWin map1 k) e
-  | e == help k = State (Game stdscr mainWin msgWin map1 k) $ Just $ drawClearMsg msgWin (show k)
-  | e == exit k = State (Game stdscr mainWin msgWin map1 k) Nothing
-  | otherwise = State (Game stdscr mainWin msgWin map1 k) $ Just $ drawClearMsg msgWin "Command not found"
+useInputKeyboard game@(Game stdscr mainWin msgWin map1 k) e
+  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMove game e
+  | e == help k = State game $ Just $ drawClearMsg msgWin (show k)
+  | e == exit k = State game Nothing
+  | otherwise = State game $ Just $ drawClearMsg msgWin "Command not found"
 
 updateScreenSize :: Game -> Curses ()
 updateScreenSize (Game stdscr mainWin msgWin map1 _) =  do
