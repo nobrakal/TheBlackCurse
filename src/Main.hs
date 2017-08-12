@@ -8,6 +8,7 @@ import Control.Monad
 
 import LevelMap
 import Draw
+import Keyboard
 
 -- NOTE: Curses is a wrapper for IO
 
@@ -18,7 +19,8 @@ data Game = Game {
   stdscr :: Window,
   mainWin :: Window,
   msgWin :: Window,
-  m :: LevelMap
+  m :: LevelMap,
+  keyboard :: Keyboard
 }
 
 data State = State {
@@ -47,14 +49,16 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
 
-    let action = Just $ drawClearMsg msgWin $ either ("Map not found") (const "Welcome") e
+    let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
 
     let map1 = (LevelMap (levelMap (map1')) (Point 0 0) mwdim (maxyx map1')) --Init the map with screen size
+
+    let keyboard = defaultKeyboard
 
     moveCamera mainWin map1
     render
 
-    mainLoop (State (Game stdscr mainWin msgWin map1) action) -- Run mainLoop
+    mainLoop (State (Game stdscr mainWin msgWin map1 keyboard) action) -- Run mainLoop
 
 mainLoop :: State -> Curses ()
 mainLoop (State game (Just todo))= do
@@ -68,13 +72,13 @@ mainLoop (State _ Nothing) = return ()
 useInput :: Game -> Maybe Event -> State
 useInput game (Just (EventCharacter c))
   | c=='Q' || c=='q' || c=='\ESC' = State game Nothing
-useInput state (Just (EventSpecialKey s)) = testAndMove state s
+useInput game (Just (EventSpecialKey s)) = testAndMove game s
 useInput game (Just (EventResized)) = State game $ Just $ updateScreenSize game
 useInput game (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
 useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
 updateScreenSize :: Game -> Curses ()
-updateScreenSize (Game stdscr mainWin msgWin map1) =  do
+updateScreenSize (Game stdscr mainWin msgWin map1 _) =  do
   y_x_width <- getScreenSize
   updateWindow mainWin clear
   let msdim = calculateMsgWinSize y_x_width
@@ -101,7 +105,7 @@ updateBorders stdscr y_x_width = do
 
 -- Test if we can move the camera then does it else say it cannot
 testAndMove :: Game -> Key -> State
-testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx )) s =
+testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx ) k) s =
   let newul = addPoint (getDir s) currul
       newbr = addPoint (getDir s) currbr
   in let isOk = isOnDisplayableMap (LevelMap m currul currbr maxyx) newul
@@ -110,7 +114,7 @@ testAndMove (Game stdscr mainWin msgWin (LevelMap m currul currbr maxyx )) s =
            action = if isOk
                       then Just $ (moveCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
-                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx)) action
+                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx) k) action
 
 -- Move the camera (do not do any test)
 moveCamera :: Window -> LevelMap -> Curses()
