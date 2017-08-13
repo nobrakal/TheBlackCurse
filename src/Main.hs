@@ -80,7 +80,8 @@ useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- An
 
 useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _) e
-  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMove game e
+  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMove game $ getDir k e
+  | elem e [up k, down k, left k, right k] = movePlayer game $ getDir k e
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k)
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin "Command not found"
@@ -112,10 +113,10 @@ updateBorders stdscr y_x_width = do
   makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
 -- Test if we can move the camera then does it else say it cannot
-testAndMove :: Game -> Event -> State
+testAndMove :: Game -> Point -> State
 testAndMove (Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k player) s =
-  let newul = addPoint (getDir k s) currul
-      newbr = addPoint (getDir k s) currbr
+  let newul = addPoint s currul
+      newbr = addPoint s currbr
   in let isOk = isOnDisplayableMap lm newul
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
@@ -138,3 +139,6 @@ getDir k s
 
 getScreenSize :: Curses Point
 getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))
+
+movePlayer :: Game -> Point -> State
+movePlayer game@(Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k player) s = State game Nothing
