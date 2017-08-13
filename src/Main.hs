@@ -57,7 +57,7 @@ main = do
 
     let player = Player (Point 0 0) 10
 
-    moveCamera mainWin map1
+    updateCamera mainWin map1
     render
 
     mainLoop (State (Game stdscr mainWin msgWin map1 keyboard player) action) -- Run mainLoop
@@ -114,31 +114,31 @@ updateBorders stdscr y_x_width = do
 
 -- Test if we can move the camera then does it else say it cannot
 testAndMoveC :: Game -> Point -> State
-testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k player) s =
-  let newul = addPoint s currul
+testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) currbr@(Point sy sx) maxyx) k player) s =
+  let newul@(Point ny nx) = addPoint s currul
       newbr = addPoint s currbr
-  in let isOk = isOnDisplayableMap lm newul
+  in let isOk = isOnDisplayableMap lm (Point (ny-cy+sy) (nx-cx+sx))
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
            action = if isOk
-                      then Just $ (moveCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
+                      then Just $ (updateCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
                       in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx) k player) action
 
 -- Move the camera (do not do any test)
-moveCamera :: Window -> LevelMap -> Curses()
-moveCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
+updateCamera :: Window -> LevelMap -> Curses()
+updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
 -- Test and run the player move
 testAndMoveP :: Game -> Point -> State
 testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m ki) k p@(Player pos pv)) s =
   let newpos = addPoint pos s
-  in let isOk = isOnDisplayableMap lm newpos
+  in let isOk = (isOnDisplayableMap lm newpos) && canGoTrough lm newpos
     in let poskOkPlayer = if isOk then newpos else pos
           -- TODO Test moveCat
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
            in let action = if isOk
-                            then Just $ moveCamera mainWin (LevelMap newmap po m ki)
+                            then Just $ updateCamera mainWin (LevelMap newmap po m ki) >> drawClearMsg msgWin "Player moved"
                             else Just $ drawClearMsg msgWin "Could not move the player"
                             in State (Game stdscr mainWin msgWin (LevelMap newmap po m ki) k (Player poskOkPlayer pv)) action
 

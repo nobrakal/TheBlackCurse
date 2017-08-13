@@ -5,8 +5,7 @@ module LevelMap (
   addPoint,
   isOnDisplayableMap,
   getCurrentDisplay,
-  invertAtIndex,
-  moveCAtPos)
+  canGoTrough)
 where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
@@ -31,31 +30,19 @@ addPoint (Point y1 x1) (Point y2 x2) = Point (y1 + y2) (x1 + x2)
 
 -- Return true if the point is on the map
 isOnDisplayableMap :: LevelMap -> Point -> Bool
-isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < (maxx-sx+cx)) && (y <(maxy-sy+cy))
+isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < maxx) && (y <maxy)
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
 getCurrentDisplay :: [[String]] -> Point -> Point -> [[String]]
 getCurrentDisplay tab (Point starty startx) (Point height width) = take height $ map (take width) $ drop starty $ map (drop startx) tab
 
+canGoTrough :: LevelMap -> Point -> Bool
+canGoTrough (LevelMap map1 _ _ _) p
+  | elem (head (getCellAt map1 p) ) ['|','+','-'] = False
+  | otherwise = True
+
+getCellAt :: [[a]] -> Point -> a
+getCellAt tab (Point y x) = (tab !! y) !! x
+
 --getCharacterPos :: LevelMap -> Point
 --getCharacterPos
-
--- WORK ONLY if length tab[y][x] >1
-invertAtIndex :: Int -> Int -> [[[Char]]] -> [[[Char]]]
-invertAtIndex y x tab=
-  let posy = take y tab
-      posy' = drop (y+1) tab
-      posx = take x (tab !! y)
-      posx' = drop (x+1) (tab !! y)
-      oldstr = (tab !! y) !!x
-  in posy ++ [posx ++ [(([(head $ tail oldstr)] ++ [(head oldstr)]) ++ (tail $ tail oldstr))] ++ posx'] ++ posy'
-
--- Add a c at the pos
-moveCAtPos :: Int -> Int -> Char -> [[String]] -> [[String]]
-moveCAtPos y x c tab =
-  let posy = take y tab
-      posy' = drop (y+1) tab
-      posx = take x (tab !! y)
-      posx' = drop (x+1) (tab !! y)
-      oldstr = (tab !! y) !!x
-  in posy ++ [posx ++ [c:oldstr] ++ posx'] ++ posy'
