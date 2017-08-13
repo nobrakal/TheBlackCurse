@@ -4,7 +4,9 @@ module LevelMap (
   Point (..),
   addPoint,
   isOnDisplayableMap,
-  getCurrentDisplay)
+  getCurrentDisplay,
+  invertAtIndex,
+  moveCAtPos)
 where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
@@ -37,3 +39,23 @@ getCurrentDisplay tab (Point starty startx) (Point height width) = take height $
 
 --getCharacterPos :: LevelMap -> Point
 --getCharacterPos
+
+-- WORK ONLY if length tab[y][x] >1
+invertAtIndex :: Int -> Int -> [[[Char]]] -> [[[Char]]]
+invertAtIndex y x tab=
+  let posy = take y tab
+      posy' = drop (y+1) tab
+      posx = take x (tab !! y)
+      posx' = drop (x+1) (tab !! y)
+      oldstr = (tab !! y) !!x
+  in posy ++ [posx ++ [(([(head $ tail oldstr)] ++ [(head oldstr)]) ++ (tail $ tail oldstr))] ++ posx'] ++ posy'
+
+-- Add a c at the pos
+moveCAtPos :: Int -> Int -> Char -> [[String]] -> [[String]]
+moveCAtPos y x c tab =
+  let posy = take y tab
+      posy' = drop (y+1) tab
+      posx = take x (tab !! y)
+      posx' = drop (x+1) (tab !! y)
+      oldstr = (tab !! y) !!x
+  in posy ++ [posx ++ [c:oldstr] ++ posx'] ++ posy'

@@ -5,5 +5,5 @@ where
 
 import LevelMap
 
-data Player = Player {charpos :: Point,
+data Player = Player {pos :: Point,
   pv :: Int}

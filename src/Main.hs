@@ -80,8 +80,8 @@ useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- An
 
 useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _) e
-  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMove game $ getDir k e
-  | elem e [up k, down k, left k, right k] = movePlayer game $ getDir k e
+  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
+  | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k)
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin "Command not found"
@@ -113,8 +113,8 @@ updateBorders stdscr y_x_width = do
   makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
 -- Test if we can move the camera then does it else say it cannot
-testAndMove :: Game -> Point -> State
-testAndMove (Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k player) s =
+testAndMoveC :: Game -> Point -> State
+testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k player) s =
   let newul = addPoint s currul
       newbr = addPoint s currbr
   in let isOk = isOnDisplayableMap lm newul
@@ -129,6 +129,19 @@ testAndMove (Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k pl
 moveCamera :: Window -> LevelMap -> Curses()
 moveCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
+-- Test and run the player move
+testAndMoveP :: Game -> Point -> State
+testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m ki) k p@(Player pos pv)) s =
+  let newpos = addPoint pos s
+  in let isOk = isOnDisplayableMap lm newpos
+    in let poskOkPlayer = if isOk then newpos else pos
+          -- TODO Test moveCat
+           newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
+           in let action = if isOk
+                            then Just $ moveCamera mainWin (LevelMap newmap po m ki)
+                            else Just $ drawClearMsg msgWin "Could not move the player"
+                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m ki) k (Player poskOkPlayer pv)) action
+
 getDir :: Keyboard -> Event -> Point
 getDir k s
   | s== up k || s == cUp k  = Point (-1) 0
@@ -139,6 +152,3 @@ getDir k s
 
 getScreenSize :: Curses Point
 getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))
-
-movePlayer :: Game -> Point -> State
-movePlayer game@(Game stdscr mainWin msgWin lm@(LevelMap m currul currbr maxyx) k player) s = State game Nothing
