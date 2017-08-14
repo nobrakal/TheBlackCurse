@@ -131,16 +131,16 @@ updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $
 
 -- Test and run the player move
 testAndMoveP :: Game -> Point -> State
-testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m ki) k p@(Player pos pv)) s =
+testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Player pos pv)) s =
   let newpos = addPoint pos s
-  in let isOk = (isOnDisplayableMap lm newpos) && canGoTrough lm newpos
+  in let isOk = (isOnDisplayableMap (LevelMap map1 po m (addPoint maxyx (Point (-1) (-1)))) newpos) && canGoTrough lm newpos
     in let poskOkPlayer = if isOk then newpos else pos
           -- TODO Test moveCat
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
            in let action = if isOk
-                            then Just $ updateCamera mainWin (LevelMap newmap po m ki) >> drawClearMsg msgWin "Player moved"
+                            then Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
                             else Just $ drawClearMsg msgWin "Could not move the player"
-                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m ki) k (Player poskOkPlayer pv)) action
+                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Player poskOkPlayer pv)) action
 
 getDir :: Keyboard -> Event -> Point
 getDir k s
