@@ -5,7 +5,7 @@ module LevelMap (
   addPoint,
   isOnDisplayableMap,
   getCurrentDisplay,
-  canGoTrough)
+  getCellAt)
 where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
@@ -35,11 +35,6 @@ isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (P
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
 getCurrentDisplay :: [[String]] -> Point -> Point -> [[String]]
 getCurrentDisplay tab (Point starty startx) (Point height width) = take height $ map (take width) $ drop starty $ map (drop startx) tab
-
-canGoTrough :: LevelMap -> Point -> Bool
-canGoTrough (LevelMap map1 _ _ _) p
-  | elem (head (getCellAt map1 p) ) ['|','+','-'] = False
-  | otherwise = True
 
 getCellAt :: [[a]] -> Point -> a
 getCellAt tab (Point y x) = (tab !! y) !! x

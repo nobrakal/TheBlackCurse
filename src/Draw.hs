@@ -15,7 +15,10 @@ drawClearMsg :: Window -> String -> Curses ()
 drawClearMsg win str = updateWindow win $ do
   y_x_width <- windowSize
   clear
-  drawString $ if ((fromIntegral ((fst y_x_width)*(snd y_x_width))) > (length str)) then str else "Msg too big"
+  if ((fromIntegral ((fst y_x_width)*(snd y_x_width))) > (length str))
+     then drawString str >> if (fromIntegral ((fst y_x_width)*(snd y_x_width))) == (length str)+1 then drawLineH (Just $ Glyph (last str) []) 1 else return ()
+     else drawString "Msg too big"
+
 
 -- Draw a tab of String
 drawTab :: Window -> [[String]] -> Curses ()
