@@ -9,7 +9,12 @@ $cabal build
 ```
 
 ## Use
-TheBlackCurse need a map file, that contains evrything for the game.
+TheBlackCurse need a map and the config file associated: they contains evrything for the game.
+```
+./TheBlackCurse map.txt map.conf [configfile]
+```
+### Config
+You can load a config file by appending its name after the map and the map.config
 ### Map file
 Here is the signification of the different symbols:
 

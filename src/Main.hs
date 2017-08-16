@@ -37,7 +37,11 @@ main = do
   let file = either (return ".") id e
   map1' <- loadMap file
 
-  cp <- if (2 == length args) then (readfile emptyCP (args !! 1)) else return (return emptyCP)
+  e' <- tryJust (guard . isDoesNotExistError) (readFile $ if (2<=length args) then (args !!1) else "../maps/map1.config")
+  let cf = either (return ".") id e'
+  map1C <- loadMap cf
+
+  cp <- if (3 == length args) then (readfile emptyCP (args !! 2)) else return (return emptyCP)
   let configFile = either (return emptyCP) id cp
 
   runCurses $ do --Start
