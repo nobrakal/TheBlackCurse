@@ -33,9 +33,12 @@ data State = State {
 main :: IO ()
 main = do
   args <- getArgs
-  e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1==length args) then (head args) else "../maps/map1.txt")
+  e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1<=length args) then (head args) else "../maps/map1.txt")
   let file = either (return ".") id e
   map1' <- loadMap file
+
+  cp <- if (2 == length args) then (readfile emptyCP (args !! 1)) else return (return emptyCP)
+  let configFile = either (return emptyCP) id cp
 
   runCurses $ do --Start
     setEcho False -- Disable echo
@@ -53,7 +56,7 @@ main = do
 
     let map1 = (LevelMap (levelMap (map1')) (Point 0 0) mwdim (maxyx map1')) --Init the map with screen size
     let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
-    let keyboard = defaultKeyboard
+    let keyboard = loadKeyboard $ merge defaultKeyboard configFile
 
     let player = Player (Point 0 0) 10
 
@@ -84,7 +87,7 @@ useInputKeyboard game@(Game _ mainWin msgWin _ k _) e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k)
   | e == exit k = State game Nothing
-  | otherwise = State game $ Just $ drawClearMsg msgWin "Command not found"
+  | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 updateScreenSize :: Game -> Curses ()
 updateScreenSize (Game stdscr mainWin msgWin map1 _ _) =  do

@@ -19,4 +19,5 @@ Here is the signification of the different symbols:
 * + is an angle wall
 * - is an horizontal wall
 * m is a fire
-* I is a man
+* K is a man
+* ~ is water

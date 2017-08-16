@@ -1,0 +1,6 @@
+[KEYBOARD]
+up='z'
+down='s'
+left='a'
+right='d'
+quit='\ESC'
