@@ -1,6 +1,10 @@
 [KEYBOARD]
-up='z'
-down='s'
-left='a'
-right='d'
-quit='\ESC'
+up=z
+down=s
+left=q
+right=d
+quit=a
+cUp=KeyUpArrow
+cDown=KeyDownArrow
+cLeft=KeyLeftArrow
+cRight=KeyRightArrow

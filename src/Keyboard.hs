@@ -26,30 +26,44 @@ defaultKeyboard :: ConfigParser --default kbd
 defaultKeyboard = either (return emptyCP) id $ do
   let cp = emptyCP
   cp <- add_section cp "KEYBOARD"
-  cp <- set cp "KEYBOARD" "up" "'z'"
-  set cp "KEYBOARD" "down" "'s'"
-  set cp "KEYBOARD" "lef" "'q'"
-  set cp "KEYBOARD" "right" "'d'"
-  set cp "KEYBOARD" "load" "'l'"
-  set cp "KEYBOARD" "quit" "'\ESC'"
-  set cp "KEYBOARD" "help" "'h'"
+  cp <- set cp "KEYBOARD" "up" "z"
+  cp <- set cp "KEYBOARD" "down" "s"
+  cp <- set cp "KEYBOARD" "lef" "q"
+  cp <- set cp "KEYBOARD" "right" "d"
+  cp <- set cp "KEYBOARD" "cUp" "KeyUpArrow"
+  cp <- set cp "KEYBOARD" "cDown" "KeyDownArrow"
+  cp <- set cp "KEYBOARD" "cLef" "KeyLeftArrow"
+  cp <- set cp "KEYBOARD" "cRight" "KeyRightArrow"
+  cp <- set cp "KEYBOARD" "load" "l"
+  cp <- set cp "KEYBOARD" "quit" "ESC"
+  cp <- set cp "KEYBOARD" "help" "h"
   return cp
 
 -- TODO get Arrow key
 loadKeyboard :: ConfigParser -> Keyboard
 loadKeyboard c = (Keyboard
-  (EventCharacter $ getC c "KEYBOARD" "up")
-  (EventCharacter $ getC c "KEYBOARD" "down")
-  (EventCharacter $ getC c "KEYBOARD" "left")
-  (EventCharacter $ getC c "KEYBOARD" "right")
-  (EventSpecialKey KeyUpArrow)
-  (EventSpecialKey KeyDownArrow)
-  (EventSpecialKey KeyLeftArrow)
-  (EventSpecialKey KeyRightArrow)
-  (EventCharacter $ getC c "KEYBOARD" "load")
-  (EventCharacter $ getC c "KEYBOARD" "quit")
-  (EventCharacter $ getC c "KEYBOARD" "help")
+  (getC c "KEYBOARD" "up")
+  (getC c "KEYBOARD" "down")
+  (getC c "KEYBOARD" "left")
+  (getC c "KEYBOARD" "right")
+  (getC c "KEYBOARD" "cUp")
+  (getC c "KEYBOARD" "cDown")
+  (getC c "KEYBOARD" "cLeft")
+  (getC c "KEYBOARD" "cRight")
+  (getC c "KEYBOARD" "load")
+  (getC c "KEYBOARD" "quit")
+  (getC c "KEYBOARD" "help")
   )
 
-getC :: ConfigParser -> String -> String -> Char
-getC c section str =either (return 'n') id $ get c section str
+getC :: ConfigParser -> String -> String -> Event
+getC c section str =either (return $ EventCharacter 'n') (getE) $ (get c section str)
+
+getE :: String -> Event
+getE s
+  | length s == 1 = EventCharacter $ head s
+  | s == "ESC" = EventCharacter '\ESC'
+  | s == "KeyUpArrow" = EventSpecialKey KeyUpArrow
+  | s == "KeyDownArrow" = EventSpecialKey KeyDownArrow
+  | s == "KeyLeftArrow" = EventSpecialKey KeyLeftArrow
+  | s == "KeyRightArrow" = EventSpecialKey KeyRightArrow
+  |otherwise = EventUnknown 0
