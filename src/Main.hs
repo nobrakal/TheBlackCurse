@@ -22,7 +22,8 @@ data Game = Game {
   msgWin :: Window,
   m :: LevelMap,
   keyboard :: Keyboard,
-  player :: Player
+  player :: Player,
+  rules :: ConfigParser
 }
 
 data State = State {
@@ -33,13 +34,16 @@ data State = State {
 main :: IO ()
 main = do
   args <- getArgs
-  e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1<=length args) then (head args) else "../maps/map1.txt")
+
+  -- Load the map file
+  e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1<=length args) then (head args) else "./maps/map1.txt")
   let file = either (return ".") id e
 
-  e' <- tryJust (guard . isDoesNotExistError) (readFile $ if (2<=length args) then (args !!1) else "../maps/map1.config")
-  let cf = either (return ".") id e'
-  -- map1C <- loadMap cf
+  -- Load the rule file
+  fr <- readfile emptyCP $ if (2<=length args) then (head $ tail args) else "./maps/map1.rules"
+  let fileRules = either (return emptyCP) id fr
 
+  -- Load the config file if provided
   cp <- if (3 == length args) then (readfile emptyCP (args !! 2)) else return (return emptyCP)
   let configFile = either (return emptyCP) id cp
 
@@ -66,7 +70,7 @@ main = do
     updateCamera mainWin map1
     render
 
-    mainLoop (State (Game stdscr mainWin msgWin map1 keyboard player) action) -- Run mainLoop
+    mainLoop (State (Game stdscr mainWin msgWin map1 keyboard player fileRules) action) -- Run mainLoop
 
 mainLoop :: State -> Curses ()
 mainLoop (State game (Just todo))= do
@@ -85,7 +89,7 @@ useInput game (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin
 useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
 useInputKeyboard :: Game -> Event -> State
-useInputKeyboard game@(Game _ mainWin msgWin _ k _) e
+useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k)
@@ -93,7 +97,7 @@ useInputKeyboard game@(Game _ mainWin msgWin _ k _) e
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 updateScreenSize :: Game -> Curses ()
-updateScreenSize (Game stdscr mainWin msgWin map1 _ _) =  do
+updateScreenSize (Game stdscr mainWin msgWin map1 _ _ _) =  do
   y_x_width <- getScreenSize
   updateWindow mainWin clear
   let msdim = calculateMsgWinSize y_x_width
@@ -120,7 +124,7 @@ updateBorders stdscr y_x_width = do
 
 -- Test if we can move the camera then does it else say it cannot
 testAndMoveC :: Game -> Point -> State
-testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) currbr@(Point sy sx) maxyx) k player) s =
+testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) currbr@(Point sy sx) maxyx) k player rules) s =
   let newul@(Point ny nx) = addPoint s currul
       newbr = addPoint s currbr
   in let isOk = isOnDisplayableMap lm (Point (ny-cy+sy) (nx-cx+sx))
@@ -129,7 +133,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) cur
            action = if isOk
                       then Just $ (updateCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
-                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx) k player) action
+                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx) k player rules) action
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> LevelMap -> Curses()
@@ -137,7 +141,7 @@ updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $
 
 -- Test and run the player move
 testAndMoveP :: Game -> Point -> State
-testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Player pos pv)) s =
+testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Player pos pv) rules) s =
   let newpos = addPoint pos s
   in let isOk = (isOnDisplayableMap (LevelMap map1 po m (addPoint maxyx (Point (-1) (-1)))) newpos) && canGoTrough lm newpos
     in let poskOkPlayer = if isOk then newpos else pos
@@ -146,7 +150,7 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
            in let action = if isOk
                             then Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
                             else Just $ drawClearMsg msgWin "Could not move the player"
-                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Player poskOkPlayer pv)) action
+                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Player poskOkPlayer pv) rules) action
 
 getDir :: Keyboard -> Event -> Point
 getDir k s

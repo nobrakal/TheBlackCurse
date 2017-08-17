@@ -39,7 +39,6 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "help" "h"
   return cp
 
--- TODO get Arrow key
 loadKeyboard :: ConfigParser -> Keyboard
 loadKeyboard c = (Keyboard
   (getC c "KEYBOARD" "up")
