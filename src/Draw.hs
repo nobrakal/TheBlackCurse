@@ -1,7 +1,9 @@
 module Draw
   (drawClearMsg,
   drawTab,
-  makeBorders)
+  makeBorders,
+  getScreenSize
+  )
 
 where
 
@@ -47,3 +49,6 @@ makeBorders win (Point pos_y' pos_x') (Point y' x') = updateWindow win $ do
         pos_y = toInteger pos_y'
         x = toInteger x'
         y = toInteger y'
+
+getScreenSize :: Curses Point
+getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))

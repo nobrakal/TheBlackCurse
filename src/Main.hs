@@ -92,7 +92,7 @@ useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
-  | e == action k = State game Nothing
+  | e == action k = doSomething game
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
@@ -136,10 +136,6 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) cur
                       else Just $ drawClearMsg msgWin "Could not move the camera"
                       in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx) k player rules) action
 
--- Move the camera (do not do any test)
-updateCamera :: Window -> LevelMap -> Curses()
-updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
-
 -- Test and run the player move
 testAndMoveP :: Game -> Point -> State
 testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos pv) rules) s =
@@ -153,13 +149,10 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
                             else Just $ drawClearMsg msgWin "Could not move the player"
                             in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer pv) rules) action
 
-getDir :: Keyboard -> Event -> Point
-getDir k s
-  | s== up k || s == cUp k  = Point (-1) 0
-  | s== down k || s == cDown k  = Point 1 0
-  | s== left k || s == cLeft k  = Point 0 (-1)
-  | s== right k || s == cRight k = Point 0 1
-  | otherwise = Point 0 0
+-- Move the camera (do not do any test)
+updateCamera :: Window -> LevelMap -> Curses()
+updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
-getScreenSize :: Curses Point
-getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))
+
+doSomething :: Game -> State
+doSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos pv) rules) = State game Nothing

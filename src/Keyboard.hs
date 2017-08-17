@@ -1,12 +1,14 @@
 module Keyboard
     (Keyboard (..),
     defaultKeyboard,
-    loadKeyboard
+    loadKeyboard,
+    getDir
     )
 where
 
 import UI.NCurses
 import Data.ConfigFile
+import LevelMap
 
 data Keyboard = Keyboard {
   up :: Event,
@@ -69,3 +71,11 @@ getE s
   | s == "KeyLeftArrow" = EventSpecialKey KeyLeftArrow
   | s == "KeyRightArrow" = EventSpecialKey KeyRightArrow
   |otherwise = EventUnknown 0
+
+getDir :: Keyboard -> Event -> Point
+getDir k s
+  | s== up k || s == cUp k  = Point (-1) 0
+  | s== down k || s == cDown k  = Point 1 0
+  | s== left k || s == cLeft k  = Point 0 (-1)
+  | s== right k || s == cRight k = Point 0 1
+  | otherwise = Point 0 0
