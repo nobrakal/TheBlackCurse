@@ -167,6 +167,7 @@ doSomethingAt :: Game -> Curses ()-> Point -> State
 doSomethingAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) action p'
   | poss == 'K' = actDo "The man walked and say nothing"
   | poss == 'm' = actDo "This would burn"
+  | poss = '*' = actDo "Trees evrywhere"
   | otherwise = actDo "Would interract"
   where
     poss = head $ getCellAt map1 p'
