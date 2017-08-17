@@ -129,7 +129,8 @@ testAndMoveC :: Game -> Direction -> State
 testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) currbr@(Point sy sx) maxyx) k player rules) s =
   let newul@(Point ny nx) = addPoint currul $ dirToPoint s
       newbr = addPoint currbr $ dirToPoint s
-  in let isOk = isOnDisplayableMap lm (Point (ny-cy+sy) (nx-cx+sx))
+      -- Can do better in this test.......
+  in let isOk = isOnDisplayableMap lm (Point (ny-cy+sy) (nx-cx+sx)) && isOnDisplayableMap lm newul
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
            action = if isOk
