@@ -133,7 +133,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) cur
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
            action = if isOk
-                      then Just $ (updateCamera mainWin (LevelMap m newul currbr maxyx)) >> drawClearMsg msgWin "Camera moved"
+                      then Just $ (updateCamera mainWin (LevelMap m posOkUl posOkBr maxyx)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
                       in State (Game stdscr mainWin msgWin (LevelMap m posOkUl posOkBr maxyx) k player rules) action
 
@@ -147,7 +147,7 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
            in if isOk
                 then State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer s pv) rules) $ Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
-                else testAndDoSomething (Game stdscr mainWin msgWin (LevelMap map1 po m maxyx) k (Beast poskOkPlayer s pv) rules) 
+                else testAndDoSomething (Game stdscr mainWin msgWin (LevelMap map1 po m maxyx) k (Beast poskOkPlayer s pv) rules)
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> LevelMap -> Curses()

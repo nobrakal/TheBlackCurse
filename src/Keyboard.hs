@@ -37,7 +37,7 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "right" "d"
   cp <- set cp "KEYBOARD" "cUp" "KeyUpArrow"
   cp <- set cp "KEYBOARD" "cDown" "KeyDownArrow"
-  cp <- set cp "KEYBOARD" "cLef" "KeyLeftArrow"
+  cp <- set cp "KEYBOARD" "cLeft" "KeyLeftArrow"
   cp <- set cp "KEYBOARD" "cRight" "KeyRightArrow"
   cp <- set cp "KEYBOARD" "action" "e"
   cp <- set cp "KEYBOARD" "load" "l"
