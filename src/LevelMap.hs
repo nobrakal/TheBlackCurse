@@ -5,7 +5,8 @@ module LevelMap (
   addPoint,
   isOnDisplayableMap,
   getCurrentDisplay,
-  getCellAt)
+  getCellAt,
+  getCharPos)
 where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
@@ -16,10 +17,10 @@ data LevelMap = LevelMap {levelMap :: [[String]],
   maxyx :: Point -- Height and width of the map
 }
 
-loadMap :: String -> IO LevelMap
-loadMap file = do
+loadMap :: String -> Point -> Point -> LevelMap
+loadMap file currul currbl = do
   let file_map = map (++ ["\n"])$ map words $lines file
-  return (LevelMap file_map (Point 0 0) (Point 0 0) (Point (length file_map) (getmaxLength file_map)))
+  LevelMap file_map currul currbl (Point (length file_map) (getmaxLength file_map))
 
 getmaxLength :: [[a]] -> Int
 getmaxLength [] = 0
@@ -39,5 +40,10 @@ getCurrentDisplay tab (Point starty startx) (Point height width) = take height $
 getCellAt :: [[a]] -> Point -> a
 getCellAt tab (Point y x) = (tab !! y) !! x
 
---getCharacterPos :: LevelMap -> Point
---getCharacterPos
+-- Find the "@" on the map
+getCharPos :: [[String]] -> Char -> Int -> Int-> Point
+getCharPos tab@((x:xs):xs') c y x'
+  | (head $ head $ head tab) == c = Point y x'
+    | xs' == [] && xs == [] = Point 0 0
+  | xs == [] = getCharPos xs' c (y+1) 0
+  | otherwise = getCharPos (xs:xs') c y (x'+1)

@@ -35,11 +35,10 @@ main = do
   args <- getArgs
   e <- tryJust (guard . isDoesNotExistError) (readFile $ if (1<=length args) then (head args) else "../maps/map1.txt")
   let file = either (return ".") id e
-  map1' <- loadMap file
 
   e' <- tryJust (guard . isDoesNotExistError) (readFile $ if (2<=length args) then (args !!1) else "../maps/map1.config")
   let cf = either (return ".") id e'
-  map1C <- loadMap cf
+  -- map1C <- loadMap cf
 
   cp <- if (3 == length args) then (readfile emptyCP (args !! 2)) else return (return emptyCP)
   let configFile = either (return emptyCP) id cp
@@ -58,11 +57,11 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWin_height+1) 1 -- bottom window
 
-    let map1 = (LevelMap (levelMap (map1')) (Point 0 0) mwdim (maxyx map1')) --Init the map with screen size
+    let map1 = loadMap file (Point 0 0) mwdim --Init the map with screen size
     let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
     let keyboard = loadKeyboard $ merge defaultKeyboard configFile
 
-    let player = Player (Point 0 0) 10
+    let player = Player (getCharPos (levelMap map1) '@' 0 0) 10
 
     updateCamera mainWin map1
     render
