@@ -92,7 +92,8 @@ useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
-  | e == help k = State game $ Just $ drawClearMsg msgWin (show k)
+  | e == action k = State game Nothing
+  | e == help k = State game $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
