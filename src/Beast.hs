@@ -1,5 +1,5 @@
-module Player
-    ( Player (..),
+module Beast
+    ( Beast (..),
     invertAtIndex,
     moveCAtPos,
     canGoTrough
@@ -8,7 +8,7 @@ where
 
 import LevelMap
 
-data Player = Player {pos :: Point,
+data Beast = Beast {pos :: Point,
   pv :: Int}
 
 -- WORK ONLY if length tab[y][x] >1

@@ -9,7 +9,7 @@ import Control.Monad
 import LevelMap
 import Draw
 import Keyboard
-import Player
+import Beast
 
 -- NOTE: Curses is a wrapper for IO
 
@@ -22,7 +22,7 @@ data Game = Game {
   msgWin :: Window,
   m :: LevelMap,
   keyboard :: Keyboard,
-  player :: Player,
+  player :: Beast,
   rules :: ConfigParser
 }
 
@@ -65,7 +65,7 @@ main = do
     let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
     let keyboard = loadKeyboard $ merge defaultKeyboard configFile
 
-    let player = Player (getCharPos (levelMap map1) '@' 0 0) 10
+    let player = Beast (getCharPos (levelMap map1) '@' 0 0) 10
 
     updateCamera mainWin map1
     render
@@ -141,7 +141,7 @@ updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $
 
 -- Test and run the player move
 testAndMoveP :: Game -> Point -> State
-testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Player pos pv) rules) s =
+testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos pv) rules) s =
   let newpos = addPoint pos s
   in let isOk = (isOnDisplayableMap (LevelMap map1 po m (addPoint maxyx (Point (-1) (-1)))) newpos) && canGoTrough lm newpos
     in let poskOkPlayer = if isOk then newpos else pos
@@ -150,7 +150,7 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
            in let action = if isOk
                             then Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
                             else Just $ drawClearMsg msgWin "Could not move the player"
-                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Player poskOkPlayer pv) rules) action
+                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer pv) rules) action
 
 getDir :: Keyboard -> Event -> Point
 getDir k s
