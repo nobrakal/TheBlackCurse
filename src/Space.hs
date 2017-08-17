@@ -2,7 +2,8 @@ module Space
   ( Point (..),
   Direction (..),
   dirToPoint,
-  pointToDir
+  pointToDir,
+  addPoint
   ) where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
@@ -21,3 +22,6 @@ pointToDir (Point 1 0) = DOWN
 pointToDir (Point 0 (-1)) = LEFT
 pointToDir (Point 0 1) = RIGHT
 pointToDir _ = NULL
+
+addPoint :: Point -> Point -> Point
+addPoint (Point y1 x1) (Point y2 x2) = Point (y1 + y2) (x1 + x2)

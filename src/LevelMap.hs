@@ -1,12 +1,11 @@
 module LevelMap (
   LevelMap (..),
   loadMap,
-  Point (..),
-  addPoint,
   isOnDisplayableMap,
   getCurrentDisplay,
   getCellAt,
-  getCharPos)
+  getCharPos,
+  canInteractWith)
 where
 
 import Space
@@ -26,9 +25,6 @@ getmaxLength :: [[a]] -> Int
 getmaxLength [] = 0
 getmaxLength (x:xs) = max (length x) (getmaxLength xs)
 
-addPoint :: Point -> Point -> Point
-addPoint (Point y1 x1) (Point y2 x2) = Point (y1 + y2) (x1 + x2)
-
 -- Return true if the point is on the map
 isOnDisplayableMap :: LevelMap -> Point -> Bool
 isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < maxx) && (y <maxy)
@@ -47,3 +43,7 @@ getCharPos tab@((x:xs):xs') c y x'
   | xs' == [] && xs == [] = Point 0 0
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
+
+canInteractWith :: LevelMap -> Point -> Bool
+canInteractWith lm p
+ |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) ['K','m']

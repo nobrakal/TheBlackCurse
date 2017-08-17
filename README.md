@@ -27,6 +27,7 @@ On the KEYBOARD section, you can specify the following fileds:
 * cDown
 * cLeft
 * cRight
+* action
 * load
 * help
 * quit

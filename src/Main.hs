@@ -155,4 +155,6 @@ updateCamera :: Window -> LevelMap -> Curses()
 updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
 doSomething :: Game -> State
-doSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) = State game Nothing
+doSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules)
+  |canInteractWith lm $ addPoint pos $ dirToPoint dir= State game $ Just $ drawClearMsg msgWin "Would interract"
+  | otherwise = State game $ Just $ drawClearMsg msgWin "Cannot do anything"

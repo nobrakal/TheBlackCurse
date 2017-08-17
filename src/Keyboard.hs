@@ -33,7 +33,7 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- add_section cp "KEYBOARD"
   cp <- set cp "KEYBOARD" "up" "z"
   cp <- set cp "KEYBOARD" "down" "s"
-  cp <- set cp "KEYBOARD" "lef" "q"
+  cp <- set cp "KEYBOARD" "left" "q"
   cp <- set cp "KEYBOARD" "right" "d"
   cp <- set cp "KEYBOARD" "cUp" "KeyUpArrow"
   cp <- set cp "KEYBOARD" "cDown" "KeyDownArrow"
