@@ -8,7 +8,9 @@ where
 
 import UI.NCurses
 import Data.ConfigFile
+
 import LevelMap
+import Space
 
 data Keyboard = Keyboard {
   up :: Event,
@@ -72,10 +74,10 @@ getE s
   | s == "KeyRightArrow" = EventSpecialKey KeyRightArrow
   |otherwise = EventUnknown 0
 
-getDir :: Keyboard -> Event -> Point
+getDir :: Keyboard -> Event -> Direction
 getDir k s
-  | s== up k || s == cUp k  = Point (-1) 0
-  | s== down k || s == cDown k  = Point 1 0
-  | s== left k || s == cLeft k  = Point 0 (-1)
-  | s== right k || s == cRight k = Point 0 1
-  | otherwise = Point 0 0
+  | s== up k || s == cUp k  = UP
+  | s== down k || s == cDown k  = DOWN
+  | s== left k || s == cLeft k  = LEFT
+  | s== right k || s == cRight k = RIGHT
+  | otherwise = NULL

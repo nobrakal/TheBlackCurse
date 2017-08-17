@@ -10,7 +10,7 @@ where
 import UI.NCurses
 import Data.List
 
-import LevelMap
+import Space
 
 -- Draw a message on the window if possible (clear all before)
 drawClearMsg :: Window -> String -> Curses ()

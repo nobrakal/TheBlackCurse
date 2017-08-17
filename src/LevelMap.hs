@@ -9,7 +9,7 @@ module LevelMap (
   getCharPos)
 where
 
-data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
+import Space
 
 data LevelMap = LevelMap {levelMap :: [[String]],
   currul :: Point, -- Current upper left corner of the displayed area
@@ -44,6 +44,6 @@ getCellAt tab (Point y x) = (tab !! y) !! x
 getCharPos :: [[String]] -> Char -> Int -> Int-> Point
 getCharPos tab@((x:xs):xs') c y x'
   | (head $ head $ head tab) == c = Point y x'
-    | xs' == [] && xs == [] = Point 0 0
+  | xs' == [] && xs == [] = Point 0 0
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)

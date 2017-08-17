@@ -6,6 +6,7 @@ import Data.ConfigFile
 import Control.Exception
 import Control.Monad
 
+import Space
 import LevelMap
 import Draw
 import Keyboard
@@ -65,7 +66,7 @@ main = do
     let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
     let keyboard = loadKeyboard $ merge defaultKeyboard configFile
 
-    let player = Beast (getCharPos (levelMap map1) '@' 0 0) 10
+    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10
 
     updateCamera mainWin map1
     render
@@ -90,8 +91,8 @@ useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- An
 
 useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
-  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
-  | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
+  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ dirToPoint $ getDir k e
+  | elem e [up k, down k, left k, right k] = testAndMoveP game $ dirToPoint $ getDir k e
   | e == action k = doSomething game
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == exit k = State game Nothing
@@ -138,7 +139,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) cur
 
 -- Test and run the player move
 testAndMoveP :: Game -> Point -> State
-testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos pv) rules) s =
+testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) s =
   let newpos = addPoint pos s
   in let isOk = (isOnDisplayableMap (LevelMap map1 po m (addPoint maxyx (Point (-1) (-1)))) newpos) && canGoTrough lm newpos
     in let poskOkPlayer = if isOk then newpos else pos
@@ -147,12 +148,11 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
            in let action = if isOk
                             then Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
                             else Just $ drawClearMsg msgWin "Could not move the player"
-                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer pv) rules) action
+                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer dir pv) rules) action
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> LevelMap -> Curses()
 updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
-
 doSomething :: Game -> State
-doSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos pv) rules) = State game Nothing
+doSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) = State game Nothing

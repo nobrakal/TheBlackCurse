@@ -6,9 +6,11 @@ module Beast
     )
 where
 
+import Space
 import LevelMap
 
 data Beast = Beast {pos :: Point,
+  look :: Direction,
   pv :: Int}
 
 -- WORK ONLY if length tab[y][x] >1
