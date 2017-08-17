@@ -50,6 +50,7 @@ getCharPos tab@((x:xs):xs') c y x'
 canInteractWith :: LevelMap -> Point -> Bool
 canInteractWith lm p
  |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) ['K','m']
+ |otherwise = False
 
 canGoTrough :: LevelMap -> Point -> Bool
 canGoTrough (LevelMap map1 _ _ _) p

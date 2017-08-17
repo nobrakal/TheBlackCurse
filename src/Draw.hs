@@ -21,7 +21,6 @@ drawClearMsg win str = updateWindow win $ do
      then drawString str >> if (fromIntegral ((fst y_x_width)*(snd y_x_width))) == (length str)+1 then drawLineH (Just $ Glyph (last str) []) 1 else return ()
      else drawString "Msg too big"
 
-
 -- Draw a tab of String
 drawTab :: Window -> [[String]] -> Curses ()
 drawTab win tab = drawClearMsg win $ init (concat (map (map head) tab))
