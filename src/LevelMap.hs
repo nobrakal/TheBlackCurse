@@ -47,9 +47,10 @@ getCharPos tab@((x:xs):xs') c y x'
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
 
+--TODO !!!!
 canInteractWith :: LevelMap -> Point -> Bool
 canInteractWith lm p
- |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) ['K','m']
+ |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) ['K','m','*']
  |otherwise = False
 
 canGoTrough :: LevelMap -> Point -> Bool
@@ -58,4 +59,6 @@ canGoTrough (LevelMap map1 _ _ _) p
  | otherwise = True
 
 willSay :: ConfigParser -> [[String]] -> Point -> String -> String
-willSay rules map1 p' str =either (const str) id $ get rules "GAME" $ tail $ getCellAt map1 p'
+willSay rules map1 p' str =either (const str) id $ get rules "GAME" $ if length cell == 1 then cell else tail cell
+  where
+    cell = getCellAt map1 p'
