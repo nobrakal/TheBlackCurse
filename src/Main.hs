@@ -93,7 +93,7 @@ useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
-  | e == action k = doSomething game
+  | e == action k = testAndDoSomething game
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
@@ -145,16 +145,25 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
     in let poskOkPlayer = if isOk then newpos else pos
           -- TODO Test moveCat
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
-           in let action = if isOk
-                            then Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
-                            else Just $ drawClearMsg msgWin "Could not move the player"
-                            in State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer s pv) rules) action
+           in if isOk
+                then State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer s pv) rules) $ Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
+                else testAndDoSomething (Game stdscr mainWin msgWin (LevelMap map1 po m maxyx) k (Beast poskOkPlayer s pv) rules) 
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> LevelMap -> Curses()
 updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
-doSomething :: Game -> State
-doSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules)
-  |canInteractWith lm $ addPoint pos $ dirToPoint dir= State game $ Just $ drawClearMsg msgWin "Would interract"
+-- Test if can do something, and if possible actually do it
+testAndDoSomething :: Game -> State
+testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules)
+  |canInteractWith lm $ addPoint pos $ dirToPoint dir = doSomethingAt game $ addPoint pos $ dirToPoint dir
   | otherwise = State game $ Just $ drawClearMsg msgWin "Cannot do anything"
+
+doSomethingAt :: Game -> Point -> State
+doSomethingAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) p'
+  | poss == 'K' = State game $ Just $ drawClearMsg msgWin $ willSay' "The man walked and say nothing"
+  | poss == 'm' =State game $ Just $ drawClearMsg msgWin $ willSay' "This would burn"
+  | otherwise = State game $ Just $ drawClearMsg msgWin "Would interract"
+  where
+    poss = head $ getCellAt map1 p'
+    willSay' = \x -> willSay rules map1 p' x

@@ -5,10 +5,13 @@ module LevelMap (
   getCurrentDisplay,
   getCellAt,
   getCharPos,
-  canInteractWith)
+  canInteractWith,
+  canGoTrough,
+  willSay)
 where
 
 import Space
+import Data.ConfigFile
 
 data LevelMap = LevelMap {levelMap :: [[String]],
   currul :: Point, -- Current upper left corner of the displayed area
@@ -47,3 +50,11 @@ getCharPos tab@((x:xs):xs') c y x'
 canInteractWith :: LevelMap -> Point -> Bool
 canInteractWith lm p
  |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) ['K','m']
+
+canGoTrough :: LevelMap -> Point -> Bool
+canGoTrough (LevelMap map1 _ _ _) p
+ | elem (head (getCellAt map1 p) ) ['|','+','-','K','~','m'] = False
+ | otherwise = True
+
+willSay :: ConfigParser -> [[String]] -> Point -> String -> String
+willSay rules map1 p' str =either (const str) id $ get rules "GAME" $ tail $ getCellAt map1 p'

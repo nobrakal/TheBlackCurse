@@ -1,8 +1,7 @@
 module Beast
     ( Beast (..),
     invertAtIndex,
-    moveCAtPos,
-    canGoTrough
+    moveCAtPos
     )
 where
 
@@ -29,8 +28,3 @@ moveCAtPos y x c tab =
 
 truncateAt :: Int -> Int -> [[a]] -> ([[a]], [[a]], [a], [a])
 truncateAt y x tab = (take y tab,drop (y+1) tab, take x (tab !! y),drop (x+1) (tab !! y))
-
-canGoTrough :: LevelMap -> Point -> Bool
-canGoTrough (LevelMap map1 _ _ _) p
-  | elem (head (getCellAt map1 p) ) ['|','+','-','K','~'] = False
-  | otherwise = True
