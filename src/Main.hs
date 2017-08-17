@@ -3,6 +3,7 @@ import System.Exit
 import System.Environment
 import System.IO.Error
 import Data.ConfigFile
+import Data.Maybe
 import Control.Exception
 import Control.Monad
 
@@ -93,7 +94,7 @@ useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
-  | e == action k = testAndDoSomething game
+  | e == action k = testAndDoSomething game Nothing
   | e == help k = State game $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
@@ -147,24 +148,27 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
           -- TODO Test moveCat
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
            in if isOk
-                then State (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer s pv) rules) $ Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
-                else testAndDoSomething (Game stdscr mainWin msgWin (LevelMap map1 po m maxyx) k (Beast poskOkPlayer s pv) rules)
+                then testAndDoSomething (Game stdscr mainWin msgWin (LevelMap newmap po m maxyx) k (Beast poskOkPlayer s pv) rules) $ Just $ updateCamera mainWin (LevelMap newmap po m maxyx) >> drawClearMsg msgWin "Player moved"
+                else testAndDoSomething (Game stdscr mainWin msgWin (LevelMap map1 po m maxyx) k (Beast poskOkPlayer s pv) rules) Nothing
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> LevelMap -> Curses()
 updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
 
 -- Test if can do something, and if possible actually do it
-testAndDoSomething :: Game -> State
-testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules)
-  |canInteractWith lm $ addPoint pos $ dirToPoint dir = doSomethingAt game $ addPoint pos $ dirToPoint dir
-  | otherwise = State game $ Just $ drawClearMsg msgWin "Cannot do anything"
+testAndDoSomething :: Game -> Maybe (Curses ()) -> State
+testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) action
+  |canInteractWith lm $ addPoint pos $ dirToPoint dir = doSomethingAt game action' $ addPoint pos $ dirToPoint dir
+  |otherwise = if isJust action then State game action else State game $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
+  where
+    action' = if isJust action then fromJust action else return ()
 
-doSomethingAt :: Game -> Point -> State
-doSomethingAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) p'
-  | poss == 'K' = State game $ Just $ drawClearMsg msgWin $ willSay' "The man walked and say nothing"
-  | poss == 'm' =State game $ Just $ drawClearMsg msgWin $ willSay' "This would burn"
-  | otherwise = State game $ Just $ drawClearMsg msgWin "Would interract"
+doSomethingAt :: Game -> Curses ()-> Point -> State
+doSomethingAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) action p'
+  | poss == 'K' = actDo "The man walked and say nothing"
+  | poss == 'm' = actDo "This would burn"
+  | otherwise = actDo "Would interract"
   where
     poss = head $ getCellAt map1 p'
     willSay' = \x -> willSay rules map1 p' x
+    actDo = \x -> State game $ Just $ action >> (drawClearMsg msgWin x)
