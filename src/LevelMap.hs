@@ -30,7 +30,7 @@ getmaxLength (x:xs) = max (length x) (getmaxLength xs)
 
 -- Return true if the point is on the map
 isOnDisplayableMap :: LevelMap -> Point -> Bool
-isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < maxx) && (y <maxy)
+isOnDisplayableMap (LevelMap _ (Point cy cx) (Point sy sx) (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < maxx) && (y <= maxy)
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
 getCurrentDisplay :: [[String]] -> Point -> Point -> [[String]]
@@ -47,7 +47,6 @@ getCharPos tab@((x:xs):xs') c y x'
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
 
---TODO !!!!
 canInteractWith :: LevelMap -> Point -> ConfigParser -> Bool
 canInteractWith lm p cp
  |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) $ map head $ sections cp
