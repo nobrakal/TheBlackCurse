@@ -17,13 +17,14 @@ drawClearMsg :: Window -> String -> Curses ()
 drawClearMsg win str = updateWindow win $ do
   y_x_width <- windowSize
   clear
-  if ((fromIntegral ((fst y_x_width)*(snd y_x_width))) > (length str))
-     then drawString str >> if (fromIntegral ((fst y_x_width)*(snd y_x_width))) == (length str)+1 then drawLineH (Just $ Glyph (last str) []) 1 else return ()
+  let winW = fromIntegral ((fst y_x_width)*(snd y_x_width))
+  if (length str) <= winW
+     then if (length str) == winW then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1 else drawString str
      else drawString "Msg too big"
 
 -- Draw a tab of String
 drawTab :: Window -> [[String]] -> Curses ()
-drawTab win tab = drawClearMsg win $ init (concat (map (map head) tab))
+drawTab win tab = drawClearMsg win $ concat (map (map head) tab)
 
 -- Draw borders of a rectangle starting at (pos_x,pos_y) with y rows and x columns on win
 makeBorders :: Window -> Point -> Point -> Curses ()

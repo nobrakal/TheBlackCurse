@@ -78,17 +78,18 @@ mainLoop :: State -> Curses ()
 mainLoop (State game (Just todo))= do
   todo
   render
+  y_x_width <- getScreenSize
   inp <- getEvent (stdscr game) Nothing
-  mainLoop (useInput game inp)
+  mainLoop (useInput game y_x_width inp)
 
 mainLoop (State _ Nothing) = return ()
 
-useInput :: Game -> Maybe Event -> State
-useInput game (Just (EventCharacter c)) = useInputKeyboard game (EventCharacter c)
-useInput game (Just (EventSpecialKey s)) = useInputKeyboard game (EventSpecialKey s)
-useInput game (Just (EventResized)) = State game $ Just $ updateScreenSize game
-useInput game (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
-useInput game s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
+useInput :: Game -> Point -> Maybe Event -> State
+useInput game _ (Just (EventCharacter c)) = useInputKeyboard game (EventCharacter c)
+useInput game _ (Just (EventSpecialKey s)) = useInputKeyboard game (EventSpecialKey s)
+useInput game y_x_width (Just (EventResized)) = updateScreenSize game y_x_width
+useInput game _ (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
+useInput game _ s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
 useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
@@ -99,16 +100,15 @@ useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | e == exit k = State game Nothing
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
-updateScreenSize :: Game -> Curses ()
-updateScreenSize (Game stdscr mainWin msgWin map1 _ _ _) =  do
-  y_x_width <- getScreenSize
+updateScreenSize :: Game -> Point -> State
+updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point yul xul) currbr maxyx) a b c) (Point y x)= State (Game stdscr mainWin msgWin (LevelMap m (Point (yul+y) (xul+x)) currbr a b c) $ Just $ do
   updateWindow mainWin clear
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
   updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
   updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
   updateBorders stdscr y_x_width
-  drawTab mainWin $ getCurrentDisplay (levelMap map1) (Point 0 0) (mwdim)
+  drawTab mainWin $ getCurrentDisplay m currul (mwdim)
   drawClearMsg msgWin "Resized"
 
 calculateMainWinSize :: Point -> Point
