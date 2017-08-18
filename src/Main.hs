@@ -131,7 +131,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) cur
   let newul@(Point ny nx) = addPoint currul $ dirToPoint s
       newbr = addPoint currbr $ dirToPoint s
       -- Can do better in this test.......
-  in let isOk = isOnDisplayableMap lm (Point (ny-cy+sy) (nx-cx+sx)) && isOnDisplayableMap lm newul
+  in let isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm newbr
     in let posOkUl = if isOk then newul else currul
            posOkBr = if isOk then newbr else currbr
            action = if isOk
