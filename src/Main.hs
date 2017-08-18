@@ -101,7 +101,7 @@ useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 updateScreenSize :: Game -> Point -> State
-updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point yul xul) currbr maxyx) a b c) (Point y x)= State (Game stdscr mainWin msgWin (LevelMap m (Point (yul+y) (xul+x)) currbr a b c) $ Just $ do
+updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point yul xul) currbr maxyx) a b c) y_x_width@(Point y' x')= State (Game stdscr mainWin msgWin (LevelMap m (Point (yul+y') (xul+x')) currbr maxyx) a b c) $ Just $ do
   updateWindow mainWin clear
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
