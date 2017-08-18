@@ -1,5 +1,10 @@
 [GAME]
-arthur=Welcome stranger, my name is Arthur
-flames=Seems warm and comfy
-*=It's dark here
-~=Black water, I wouldn't swim here
+cannotgothrough=Km+-|~
+[Karthur]
+tosay=Welcome stranger, my name is Arthur
+[mflames]
+tosay=Seems warm and comfy
+[*]
+tosay=It's dark here
+[~]
+tosay=Black water, I wouldn't swim here

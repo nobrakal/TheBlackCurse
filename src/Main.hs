@@ -143,7 +143,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx) cur
 testAndMoveP :: Game -> Direction -> State
 testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) s =
   let newpos = addPoint pos $ dirToPoint s
-  in let isOk = (isOnDisplayableMap (LevelMap map1 po m (addPoint maxyx (Point (-1) (-1)))) newpos) && canGoTrough lm newpos
+  in let isOk = (isOnDisplayableMap (LevelMap map1 po m (addPoint maxyx (Point (-1) (-1)))) newpos) && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
           -- TODO Test moveCat
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
@@ -158,7 +158,7 @@ updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: Game -> Maybe (Curses ()) -> State
 testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@(Beast pos dir pv) rules) action
-  |canInteractWith lm $ addPoint pos $ dirToPoint dir = doSomethingAt game action' $ addPoint pos $ dirToPoint dir
+  |canInteractWith lm (addPoint pos $ dirToPoint dir) rules = doSomethingAt game action' $ addPoint pos $ dirToPoint dir
   |otherwise = if isJust action then State game action else State game $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
   where
     action' = if isJust action then fromJust action else return ()
