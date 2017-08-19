@@ -22,7 +22,7 @@ drawClearMsg' y_x_width str = do
   clear
   let winW = ((y y_x_width)*(x y_x_width))
   if (length str) <= winW
-     then if (length str) == winW then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1 else drawString str
+     then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1
      else drawString "Msg too big"
 
 -- Draw a tab of String
