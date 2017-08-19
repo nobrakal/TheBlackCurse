@@ -158,10 +158,12 @@ updateCamera win (LevelMap map1 p ) = getScreenSize >>= \x -> drawTab win (calcu
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: Game -> Maybe (Curses ()) -> State
 testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po ) k p@(Beast pos dir pv) rules) action
-  |canInteractWith lm (pos + dirToPoint dir) rules = doSomethingAt game action' $ pos + (dirToPoint dir)
-  |otherwise = if isJust action then State game MainGame action else State game MainGame $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
+  |canInteractWith lm newpos rules = doSomethingAt game action' newpos
+  |otherwise = if isJust action then basestate action else basestate $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
   where
     action' = if isJust action then fromJust action else return ()
+    newpos = pos + (dirToPoint dir)
+    basestate = State game MainGame
 
 doSomethingAt :: Game -> Curses ()-> Point -> State
 doSomethingAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast pos dir pv) rules) action p'
