@@ -2,7 +2,8 @@ module Draw
   (drawClearMsg,
   drawTab,
   makeBorders,
-  getScreenSize
+  getScreenSize,
+  drawClearMsg'
   )
 
 where
@@ -14,17 +15,19 @@ import Space
 
 -- Draw a message on the window if possible (clear all before)
 drawClearMsg :: Window -> String -> Curses ()
-drawClearMsg win str = updateWindow win $ do
-  y_x_width <- windowSize
+drawClearMsg win str = updateWindow win $ windowSize>>= \arg -> drawClearMsg' (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))) str
+
+drawClearMsg' :: Point -> String -> Update ()
+drawClearMsg' y_x_width str = do
   clear
-  let winW = fromIntegral ((fst y_x_width)*(snd y_x_width))
+  let winW = ((y y_x_width)*(x y_x_width))
   if (length str) <= winW
      then if (length str) == winW then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1 else drawString str
      else drawString "Msg too big"
 
 -- Draw a tab of String
-drawTab :: Window -> [[String]] -> Curses ()
-drawTab win tab = drawClearMsg win $ concat (map (map head) tab)
+drawTab :: Window -> Point -> [[String]] -> Curses ()
+drawTab win y_x_width tab = updateWindow win $drawClearMsg' y_x_width $ concat (map (map head) tab)
 
 -- Draw borders of a rectangle starting at (pos_x,pos_y) with y rows and x columns on win
 makeBorders :: Window -> Point -> Point -> Curses ()

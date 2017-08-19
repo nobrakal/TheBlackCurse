@@ -78,8 +78,8 @@ mainLoop :: State -> Curses ()
 mainLoop (State game (Just todo))= do
   todo
   render
-  y_x_width <- getScreenSize
   inp <- getEvent (stdscr game) Nothing
+  y_x_width <- getScreenSize
   mainLoop (useInput game y_x_width inp)
 
 mainLoop (State _ Nothing) = return ()
@@ -101,15 +101,18 @@ useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 updateScreenSize :: Game -> Point -> State
-updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point yul xul) currbr maxyx) a b c) y_x_width@(Point y' x')= State (Game stdscr mainWin msgWin (LevelMap m (Point (yul+y') (xul+x')) currbr maxyx) a b c) $ Just $ do
+updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point yul xul) currbr maxyx) a b c) y_x_width@(Point y' x')= State (Game stdscr mainWin msgWin (LevelMap m currul newbr maxyx) a b c) $ Just $ do
   updateWindow mainWin clear
+  updateWindow msgWin clear
   let msdim = calculateMsgWinSize y_x_width
   let mwdim = calculateMainWinSize y_x_width
   updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
   updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
   updateBorders stdscr y_x_width
-  drawTab mainWin $ getCurrentDisplay m currul (mwdim)
+  updateCamera mainWin (LevelMap m currul newbr maxyx)
   drawClearMsg msgWin "Resized"
+  where
+    newbr = (Point (yul+y') (xul+x'))
 
 calculateMainWinSize :: Point -> Point
 calculateMainWinSize (Point y x ) = Point (y - msgWin_height-2) (x-2)
@@ -152,8 +155,8 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po m maxyx) k p@
                 else testAndDoSomething (Game stdscr mainWin msgWin (LevelMap map1 po m maxyx) k (Beast poskOkPlayer s pv) rules) Nothing
 
 -- Move the camera (do not do any test)
-updateCamera :: Window -> LevelMap -> Curses()
-updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \arg -> drawTab win $ getCurrentDisplay map1 p (calculateMainWinSize arg)
+updateCamera :: Window ->  LevelMap -> Curses()
+updateCamera win (LevelMap map1 p _ _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize x) $ getCurrentDisplay map1 p (calculateMainWinSize x)
 
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: Game -> Maybe (Curses ()) -> State

@@ -21,7 +21,7 @@ data LevelMap = LevelMap {levelMap :: [[String]],
 
 loadMap :: String -> Point -> Point -> LevelMap
 loadMap file currul currbl = do
-  let file_map = map (++ ["\n"])$ map words $lines file
+  let file_map = (map (++ ["\n"])$ map words $lines file) ++ [[" "]]
   LevelMap file_map currul currbl (Point (length file_map) (getmaxLength file_map))
 
 getmaxLength :: [[a]] -> Int
