@@ -88,15 +88,15 @@ mainLoop (State game status (Just todo) )= do
 mainLoop (State _ _ Nothing) = return ()
 
 useInput :: Game -> Point -> Maybe Event -> State
-useInput game _ (Just (EventCharacter c)) = useInputKeyboard game (EventCharacter c)
-useInput game _ (Just (EventSpecialKey s)) = useInputKeyboard game (EventSpecialKey s)
+useInput game y_x_width (Just (EventCharacter c)) = useInputKeyboard game (EventCharacter c) $ calculateMainWinSize y_x_width
+useInput game y_x_width (Just (EventSpecialKey s)) = useInputKeyboard game (EventSpecialKey s) $ calculateMainWinSize y_x_width
 useInput game y_x_width (Just (EventResized)) = State game MainGame $ Just $ updateScreenSize game y_x_width
 useInput game _ (Just (EventUnknown s)) = State game MainGame $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
 useInput game _ s = State game MainGame $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
-useInputKeyboard :: Game -> Event -> State
-useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
-  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
+useInputKeyboard :: Game -> Event -> Point -> State
+useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e y_x_width
+  | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game (getDir k e) (y_x_width)
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
   | e == action k = testAndDoSomething game Nothing
   | e == help k = State game MainGame $ Just $ drawClearMsg msgWin (show k) --TODO
@@ -130,10 +130,10 @@ updateBorders stdscr y_x_width = do
   makeBorders stdscr (Point msgWin_height 0) (Point ((y mwdim) +2) ((x mwdim)+2) )-- Make borders of mainWin
 
 -- Test if we can move the camera then does it else say it cannot
-testAndMoveC :: Game -> Direction -> State
-testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx)) k player rules) s =
-  let newul@(Point ny nx) = addPoint currul $ dirToPoint s
-  in let isOk = isOnDisplayableMap lm newul
+testAndMoveC :: Game -> Direction -> Point -> State
+testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx)) k player rules) s winsize =
+  let newul@(Point ny nx) = currul + (dirToPoint s)
+  in let isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + (Point (-1) (-1)))
     in let posOkUl = if isOk then newul else currul
            action = if isOk
                       then Just $ (updateCamera mainWin (LevelMap m posOkUl)) >> drawClearMsg msgWin "Camera moved"
@@ -143,7 +143,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx)) k 
 -- Test and run the player move
 testAndMoveP :: Game -> Direction -> State
 testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast pos dir pv) rules) s =
-  let newpos = addPoint pos $ dirToPoint s
+  let newpos = pos + (dirToPoint s)
   in let isOk = (isOnDisplayableMap (LevelMap map1 po) newpos) && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
@@ -158,7 +158,7 @@ updateCamera win (LevelMap map1 p ) = getScreenSize >>= \x -> drawTab win (calcu
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: Game -> Maybe (Curses ()) -> State
 testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po ) k p@(Beast pos dir pv) rules) action
-  |canInteractWith lm (addPoint pos $ dirToPoint dir) rules = doSomethingAt game action' $ addPoint pos $ dirToPoint dir
+  |canInteractWith lm (pos + dirToPoint dir) rules = doSomethingAt game action' $ pos + (dirToPoint dir)
   |otherwise = if isJust action then State game MainGame action else State game MainGame $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
   where
     action' = if isJust action then fromJust action else return ()
