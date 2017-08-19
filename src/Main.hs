@@ -30,8 +30,11 @@ data Game = Game {
 
 data State = State {
   game :: Game,
+  status :: Status,
   todo :: Maybe (Curses ())
 }
+
+data Status = MainGame | Dialogue
 
 main :: IO ()
 main = do
@@ -72,36 +75,36 @@ main = do
     updateCamera mainWin map1
     render
 
-    mainLoop (State (Game stdscr mainWin msgWin map1 keyboard player fileRules) action) -- Run mainLoop
+    mainLoop (State (Game stdscr mainWin msgWin map1 keyboard player fileRules) MainGame action) -- Run mainLoop
 
 mainLoop :: State -> Curses ()
-mainLoop (State game (Just todo))= do
+mainLoop (State game status (Just todo) )= do
   todo
   render
   inp <- getEvent (stdscr game) Nothing
   y_x_width <- getScreenSize
   mainLoop (useInput game y_x_width inp)
 
-mainLoop (State _ Nothing) = return ()
+mainLoop (State _ _ Nothing) = return ()
 
 useInput :: Game -> Point -> Maybe Event -> State
 useInput game _ (Just (EventCharacter c)) = useInputKeyboard game (EventCharacter c)
 useInput game _ (Just (EventSpecialKey s)) = useInputKeyboard game (EventSpecialKey s)
-useInput game y_x_width (Just (EventResized)) = updateScreenSize game y_x_width
-useInput game _ (Just (EventUnknown s)) = State game $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
-useInput game _ s = State game $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
+useInput game y_x_width (Just (EventResized)) = State game MainGame $ Just $ updateScreenSize game y_x_width
+useInput game _ (Just (EventUnknown s)) = State game MainGame $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
+useInput game _ s = State game MainGame $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
 
 useInputKeyboard :: Game -> Event -> State
 useInputKeyboard game@(Game _ mainWin msgWin _ k _ rules) e
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game $ getDir k e
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
   | e == action k = testAndDoSomething game Nothing
-  | e == help k = State game $ Just $ drawClearMsg msgWin (show k) --TODO
-  | e == exit k = State game Nothing
-  | otherwise = State game $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
+  | e == help k = State game MainGame $ Just $ drawClearMsg msgWin (show k) --TODO
+  | e == exit k = State game MainGame Nothing
+  | otherwise = State game MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
-updateScreenSize :: Game -> Point -> State
-updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point yul xul)) a b c) y_x_width@(Point y' x')= State (Game stdscr mainWin msgWin (LevelMap m currul) a b c) $ Just $ do
+updateScreenSize :: Game -> Point -> Curses ()
+updateScreenSize game@(Game stdscr mainWin msgWin lm a b c) y_x_width =  do
   updateWindow mainWin clear
   updateWindow msgWin clear
   let msdim = calculateMsgWinSize y_x_width
@@ -109,10 +112,8 @@ updateScreenSize game@(Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point y
   updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
   updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
   updateBorders stdscr y_x_width
-  updateCamera mainWin (LevelMap m currul)
+  updateCamera mainWin lm
   drawClearMsg msgWin "Resized"
-  where
-    newbr = (Point (yul+y') (xul+x'))
 
 calculateMainWinSize :: Point -> Point
 calculateMainWinSize (Point y x ) = Point (y - msgWin_height-2) (x-2)
@@ -132,13 +133,12 @@ updateBorders stdscr y_x_width = do
 testAndMoveC :: Game -> Direction -> State
 testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx)) k player rules) s =
   let newul@(Point ny nx) = addPoint currul $ dirToPoint s
-      -- Can do better in this test.......
   in let isOk = isOnDisplayableMap lm newul
     in let posOkUl = if isOk then newul else currul
            action = if isOk
                       then Just $ (updateCamera mainWin (LevelMap m posOkUl)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
-                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl) k player rules) action
+                      in State (Game stdscr mainWin msgWin (LevelMap m posOkUl) k player rules) MainGame action
 
 -- Test and run the player move
 testAndMoveP :: Game -> Direction -> State
@@ -146,7 +146,6 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast p
   let newpos = addPoint pos $ dirToPoint s
   in let isOk = (isOnDisplayableMap (LevelMap map1 po) newpos) && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
-          -- TODO Test moveCat
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
            in if isOk
                 then testAndDoSomething (Game stdscr mainWin msgWin (LevelMap newmap po) k (Beast poskOkPlayer s pv) rules) $ Just $ updateCamera mainWin (LevelMap newmap po) >> drawClearMsg msgWin "Player moved"
@@ -160,7 +159,7 @@ updateCamera win (LevelMap map1 p ) = getScreenSize >>= \x -> drawTab win (calcu
 testAndDoSomething :: Game -> Maybe (Curses ()) -> State
 testAndDoSomething game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po ) k p@(Beast pos dir pv) rules) action
   |canInteractWith lm (addPoint pos $ dirToPoint dir) rules = doSomethingAt game action' $ addPoint pos $ dirToPoint dir
-  |otherwise = if isJust action then State game action else State game $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
+  |otherwise = if isJust action then State game MainGame action else State game MainGame $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
   where
     action' = if isJust action then fromJust action else return ()
 
@@ -173,4 +172,4 @@ doSomethingAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast 
   where
     poss = head $ getCellAt map1 p'
     willSay' = \x -> willSay rules map1 p' x
-    actDo = \x -> State game $ Just $ action >> (drawClearMsg msgWin (willSay' x))
+    actDo = \x -> State game MainGame $ Just $ action >> (drawClearMsg msgWin (willSay' x))
