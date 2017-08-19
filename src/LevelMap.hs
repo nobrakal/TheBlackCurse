@@ -14,15 +14,13 @@ import Space
 import Data.ConfigFile
 
 data LevelMap = LevelMap {levelMap :: [[String]],
-  currul :: Point, -- Current upper left corner of the displayed area
-  currbl :: Point, -- Current bottom right corner of the displayed area
-  maxyx :: Point -- Height and width of the map
+  currul :: Point -- Current upper left corner of the displayed area
 }
 
-loadMap :: String -> Point -> Point -> LevelMap
-loadMap file currul currbl = do
-  let file_map = (map (++ ["\n"])$ map words $lines file) ++ [[" "]]
-  LevelMap file_map currul currbl (Point (length file_map) (getmaxLength file_map))
+loadMap :: String -> Point -> LevelMap
+loadMap file currul = do
+  let file_map = (map (++ ["\n"])$ map words $lines file) -- ++ [[" "]]
+  LevelMap file_map currul
 
 getmaxLength :: [[a]] -> Int
 getmaxLength [] = 0
@@ -30,7 +28,10 @@ getmaxLength (x:xs) = max (length x) (getmaxLength xs)
 
 -- Return true if the point is on the map
 isOnDisplayableMap :: LevelMap -> Point -> Bool
-isOnDisplayableMap (LevelMap _ _ _ (Point maxy maxx)) (Point y x) = (x>=0) && (y>=0) && (x < maxx) && (y < maxy)
+isOnDisplayableMap (LevelMap tab _) (Point y x) = (x>=0) && (y>=0) && (x < xw) && (y < yw)
+  where
+    yw = length tab
+    xw = (-1) + length (head tab)
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
 getCurrentDisplay :: [[String]] -> Point -> Point -> [[String]]
@@ -53,7 +54,7 @@ canInteractWith lm p cp
  |otherwise = False
 
 canGoTrough :: LevelMap -> Point -> ConfigParser -> Bool
-canGoTrough (LevelMap map1 _ _ _) p cp
+canGoTrough (LevelMap map1 _) p cp
  | elem (head (getCellAt map1 p) ) $ either (const "") id $ get cp "GAME" "cannotgothrough" = False
  | otherwise = True
 
