@@ -48,9 +48,9 @@ getCharPos tab@((x:xs):xs') c y x'
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
 
-canInteractWith :: LevelMap -> Point -> ConfigParser -> Bool
-canInteractWith lm p cp
- |isOnDisplayableMap lm p = elem (getCellAt (levelMap lm) p) $ sections cp
+canInteractWith :: LevelMap -> Point -> ConfigParser -> String -> Bool
+canInteractWith lm p cp todo
+ |isOnDisplayableMap lm p = has_option cp (getCellAt (levelMap lm) p) todo
  |otherwise = False
 
 canGoTrough :: LevelMap -> Point -> ConfigParser -> Bool

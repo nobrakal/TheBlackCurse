@@ -159,7 +159,7 @@ updateCamera win (LevelMap map1 p ) = getScreenSize >>= \x -> drawTab win (calcu
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: Game -> Maybe (Curses ()) -> State
 testAndSayTosay game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po ) k p@(Beast pos dir pv) rules) action
-  |canInteractWith lm newpos rules = sayToSayAt game action' newpos
+  |canInteractWith lm newpos rules "tosay"= sayToSayAt game action' newpos
   |otherwise = if isJust action then basestate action else basestate $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
   where
     action' = if isJust action then fromJust action else return ()
