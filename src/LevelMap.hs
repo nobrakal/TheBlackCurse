@@ -7,7 +7,7 @@ module LevelMap (
   getCharPos,
   canInteractWith,
   canGoTrough,
-  willSay)
+  willDo)
 where
 
 import Space
@@ -50,7 +50,7 @@ getCharPos tab@((x:xs):xs') c y x'
 
 canInteractWith :: LevelMap -> Point -> ConfigParser -> Bool
 canInteractWith lm p cp
- |isOnDisplayableMap lm p = elem (head $getCellAt (levelMap lm) p) $ map head $ sections cp
+ |isOnDisplayableMap lm p = elem (getCellAt (levelMap lm) p) $ sections cp
  |otherwise = False
 
 canGoTrough :: LevelMap -> Point -> ConfigParser -> Bool
@@ -58,7 +58,7 @@ canGoTrough (LevelMap map1 _) p cp
  | elem (head (getCellAt map1 p) ) $ either (const "") id $ get cp "GAME" "cannotgothrough" = False
  | otherwise = True
 
-willSay :: ConfigParser -> [[String]] -> Point -> String -> String
-willSay rules map1 p' str =either (const str) id $ get rules cell "tosay"
+willDo :: ConfigParser -> [[String]] -> Point -> String -> String -> String
+willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
   where
     cell = getCellAt map1 p'
