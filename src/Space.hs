@@ -5,7 +5,7 @@ module Space
   pointToDir
   ) where
 
-data Point = Point {y :: Int, x :: Int} deriving (Show) -- To represent a point on the map
+data Point = Point {y :: Int, x :: Int} deriving (Show, Eq) -- To represent a point on the map
 instance Num Point where
   (Point a1 b1) + (Point a2 b2) = (Point (a1+a2) (b1+b2))
   (Point a1 b1) * (Point a2 b2) = (Point (a1*a2) (b1*b2))

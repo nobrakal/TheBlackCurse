@@ -7,7 +7,8 @@ module LevelMap (
   getCharPos,
   canInteractWith,
   canGoTrough,
-  willDo)
+  willDo,
+  getRadius)
 where
 
 import Space
@@ -44,7 +45,7 @@ getCellAt tab (Point y x) = (tab !! y) !! x
 getCharPos :: [[String]] -> Char -> Int -> Int-> Point
 getCharPos tab@((x:xs):xs') c y x'
   | (head $ head $ head tab) == c = Point y x'
-  | xs' == [] && xs == [] = Point 0 0
+  | xs' == [] && xs == [] = Point (-1) (-1)
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
 
@@ -62,3 +63,14 @@ willDo :: ConfigParser -> [[String]] -> Point -> String -> String -> String
 willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
   where
     cell = getCellAt map1 p'
+
+-- TODO
+getRadius :: [[String]] -> ConfigParser -> Int -> [[String]]
+getRadius map1 cf radius_w
+  | posArob == (Point (-1) (-1)) = [[""]]
+  | otherwise = getRadiusFromPoint map1 posArob radius_w $ either (const "") (map head) $ get cf "GAME" "cannotgothrough"
+  where
+    posArob = (getCharPos map1 '@' 0 0)
+
+getRadiusFromPoint :: [[String]] -> Point -> Int -> [Char] -> [[String]]
+getRadiusFromPoint map1 (Point y x) radius_w elements = map1
