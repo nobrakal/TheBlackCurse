@@ -64,13 +64,19 @@ willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
   where
     cell = getCellAt map1 p'
 
--- TODO
-getRadius :: [[String]] -> ConfigParser -> Int -> [[String]]
-getRadius map1 cf radius_w
-  | posArob == (Point (-1) (-1)) = [[""]]
-  | otherwise = getRadiusFromPoint map1 posArob radius_w $ either (const "") (map head) $ get cf "GAME" "cannotgothrough"
+getRadius :: [[String]] -> ConfigParser -> Point -> Int -> [[String]]
+getRadius map1 cf start radius_w = applyMask map1 emptyMap $ getRadiusFromPoint start radius_w
   where
-    posArob = (getCharPos map1 '@' 0 0)
+    emptyMap = (replicate (length map1) $ (replicate (length $ head map1) " "))
 
-getRadiusFromPoint :: [[String]] -> Point -> Int -> [Char] -> [[String]]
-getRadiusFromPoint map1 (Point y x) radius_w elements = map1
+applyMask :: [[String]] -> [[String]] -> [Point] -> [[String]]
+applyMask tab emptyMap [] = emptyMap
+applyMask tab emptyMap (p@(Point y x):xs) = if isOnDisplayableMap (LevelMap tab (Point 0 0)) p
+  then applyMask tab (replaceByStr emptyMap y x (getCellAt tab p)) xs
+  else applyMask tab emptyMap xs
+
+replaceByStr :: [[String]] -> Int -> Int -> String -> [[String]]
+replaceByStr tab y x str = a ++ ((a' ++ (str:(if b' /= [] then tail b' else b'))):(if b /= [] then tail b else b))
+  where
+    (a,b@(x':xs)) = splitAt y tab
+    (a',b') = splitAt x x'

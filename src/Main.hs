@@ -73,10 +73,12 @@ main = do
 
     let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10
 
-    updateCamera mainWin map1 fileRules
+    let game = (Game stdscr mainWin msgWin map1 keyboard player fileRules)
+
+    updateCamera game
     render
 
-    mainLoop (State (Game stdscr mainWin msgWin map1 keyboard player fileRules) MainGame action) -- Run mainLoop
+    mainLoop (State game MainGame action) -- Run mainLoop
 
 mainLoop :: State -> Curses ()
 mainLoop (State game status (Just todo) )= do
@@ -113,7 +115,7 @@ updateScreenSize game@(Game stdscr mainWin msgWin lm _ _ rules) y_x_width =  do
   updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
   updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
   updateBorders stdscr y_x_width
-  updateCamera mainWin lm rules
+  updateCamera game
   drawClearMsg msgWin "Resized"
 
 calculateMainWinSize :: Point -> Point
@@ -137,7 +139,7 @@ testAndMoveC (Game stdscr mainWin msgWin lm@(LevelMap m currul@(Point cy cx)) k 
   in let isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + (Point (-1) (-1)))
     in let posOkUl = if isOk then newul else currul
            action = if isOk
-                      then Just $ (updateCamera mainWin (LevelMap m posOkUl) rules) >> drawClearMsg msgWin "Camera moved"
+                      then Just $ (updateCamera (Game stdscr mainWin msgWin (LevelMap m posOkUl) k player rules)) >> drawClearMsg msgWin "Camera moved"
                       else Just $ drawClearMsg msgWin "Could not move the camera"
                       in State (Game stdscr mainWin msgWin (LevelMap m posOkUl) k player rules) MainGame action
 
@@ -148,13 +150,19 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast p
   in let isOk = (isOnDisplayableMap (LevelMap map1 po) newpos) && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
+           g = Game stdscr mainWin msgWin (LevelMap newmap po) k (Beast poskOkPlayer s pv) rules
            in if isOk
-                then testAndSayTosay (Game stdscr mainWin msgWin (LevelMap newmap po) k (Beast poskOkPlayer s pv) rules) $ Just $ updateCamera mainWin (LevelMap newmap po) rules >> drawClearMsg msgWin "Player moved"
+                then testAndSayTosay g $ Just $ updateCamera g >> drawClearMsg msgWin "Player moved"
                 else testAndSayTosay (Game stdscr mainWin msgWin (LevelMap map1 po) k (Beast poskOkPlayer s pv) rules) Nothing
 
 -- Move the camera (do not do any test)
-updateCamera :: Window -> LevelMap -> ConfigParser -> Curses()
-updateCamera win (LevelMap map1 p ) rules = getScreenSize >>= \x -> drawTab win (calculateMainWinSize x) $ getRadius (getCurrentDisplay map1 p (calculateMainWinSize x)) rules 4
+updateCamera :: Game -> Curses()
+updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize x) $ currentDisplay x
+  where
+    radius = (either (const 0) read $ get rules "GAME" "radius")
+    currentDisplay = \x -> if 0 < radius
+      then getRadius (getCurrentDisplay map1 p (calculateMainWinSize x)) rules pos radius
+      else (getCurrentDisplay map1 p (calculateMainWinSize x))
 
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: Game -> Maybe (Curses ()) -> State

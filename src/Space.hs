@@ -2,7 +2,10 @@ module Space
   ( Point (..),
   Direction (..),
   dirToPoint,
-  pointToDir
+  pointToDir,
+  dist,
+  getRadiusFromPoint,
+  getListOfPoint
   ) where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show, Eq) -- To represent a point on the map
@@ -28,3 +31,26 @@ pointToDir (Point 1 0) = DOWN
 pointToDir (Point 0 (-1)) = LEFT
 pointToDir (Point 0 1) = RIGHT
 pointToDir _ = NULL
+
+dist :: Point -> Point -> Int
+dist (Point x y) (Point x' y') = floor . sqrt $ xx^2 + yy^2
+  where
+    xx = fromIntegral $ x-x'
+    yy = fromIntegral $ y-y'
+
+getRadiusFromPoint :: Point -> Int -> [Point]
+getRadiusFromPoint start@(Point starty startx) radius_w = getRadiusFromPoint' start radius_w $ getListOfPoint listy listx
+  where
+    listy = [(starty-radius_w)..(starty+radius_w)]
+    listx = [(startx-radius_w)..(startx+radius_w)]
+
+getListOfPoint :: [Int] -> [Int] -> [Point]
+getListOfPoint y x = concat $ map (\x -> zipWith (Point) y (repeat x)) (x)
+
+getRadiusFromPoint' :: Point -> Int -> [Point] -> [Point]
+getRadiusFromPoint' start radius_w [] = []
+getRadiusFromPoint' start radius_w (x:xs)
+  | dist start x <= radius_w = x : todo
+  |otherwise = todo
+  where
+    todo = getRadiusFromPoint' start radius_w xs
