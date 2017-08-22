@@ -35,6 +35,7 @@ data State = State {
   todo :: Maybe (Curses ())
 }
 
+type Dialogue = String -- The String used
 data Status = MainGame | Dialogue
 
 main :: IO ()
@@ -92,24 +93,30 @@ mainLoop (State _ _ Nothing) = return ()
 
 useInput :: Game -> Status -> Point -> Maybe Event -> State
 useInput game status y_x_width (Just e) = case e of
-  (EventCharacter c) -> useInputKeyboardMG game (EventCharacter c) $ calculateMainWinSize y_x_width
-  (EventSpecialKey s) -> useInputKeyboardMG game (EventSpecialKey s) $ calculateMainWinSize y_x_width
+  (EventCharacter c) -> useInputSwitchStatus game (EventCharacter c) status $ calculateMainWinSize y_x_width
+  (EventSpecialKey s) -> useInputSwitchStatus game (EventSpecialKey s) status $ calculateMainWinSize y_x_width
   EventResized -> State game MainGame $ Just $ updateScreenSize game y_x_width
   (EventUnknown s) -> State game MainGame $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
-{- useInput game status y_x_width (Just (EventCharacter c)) = useInputKeyboardMG game (EventCharacter c) $ calculateMainWinSize y_x_width
-useInput game status y_x_width (Just (EventSpecialKey s)) = useInputKeyboardMG game (EventSpecialKey s) $ calculateMainWinSize y_x_width
-useInput game status y_x_width (Just (EventResized)) = State game MainGame $ Just $ updateScreenSize game y_x_width
-useInput game status _ (Just (EventUnknown s)) = State game MainGame $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR -}
 useInput game status _ s = State game MainGame $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
+
+useInputSwitchStatus :: Game -> Event -> Status -> Point -> State
+useInputSwitchStatus g e status p  = case status of
+  MainGame -> useInputKeyboardMG g e p
+  Dialogue -> useInputKeyboardD g e p
 
 useInputKeyboardMG :: Game -> Event -> Point -> State
 useInputKeyboardMG game@(Game _ mainWin msgWin _ k _ rules) e y_x_width
   | elem e [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game (getDir k e) (y_x_width)
   | elem e [up k, down k, left k, right k] = testAndMoveP game $ getDir k e
   | e == action k = testAndSayTosay (State game Dialogue Nothing)
-  | e == help k = State game MainGame $ Just $ drawClearMsg msgWin (show k) --TODO
+  | e == help k = State game Dialogue $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == exit k = State game MainGame Nothing
   | otherwise = State game MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
+
+useInputKeyboardD :: Game -> Event -> Point -> State
+useInputKeyboardD game@(Game _ mainWin msgWin _ k _ rules) e y_x_width
+  | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin $ "Exiting the dialogue"
+  | otherwise = State game Dialogue $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 updateScreenSize :: Game -> Point -> Curses ()
 updateScreenSize game@(Game stdscr mainWin msgWin lm _ _ rules) y_x_width =  do
