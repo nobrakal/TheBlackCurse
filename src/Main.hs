@@ -157,12 +157,12 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast p
 
 -- Move the camera (do not do any test)
 updateCamera :: Game -> Curses()
-updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize x) $ currentDisplay x
+updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize x) (getCurrentDisplay actualmap p (calculateMainWinSize x))
   where
     radius = (either (const 0) read $ get rules "GAME" "radius")
-    currentDisplay = \x -> if 0 < radius
-      then getRadius (getCurrentDisplay map1 p (calculateMainWinSize x)) rules pos radius
-      else (getCurrentDisplay map1 p (calculateMainWinSize x))
+    actualmap = if 0 < radius
+      then getRadius map1 rules pos radius
+      else map1
 
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: Game -> Maybe (Curses ()) -> State

@@ -49,6 +49,8 @@ getCharPos tab@((x:xs):xs') c y x'
   | xs == [] = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
 
+{- Interract things -}
+
 canInteractWith :: LevelMap -> Point -> ConfigParser -> String -> Bool
 canInteractWith lm p cp todo
  |isOnDisplayableMap lm p = has_option cp (getCellAt (levelMap lm) p) todo
@@ -63,6 +65,8 @@ willDo :: ConfigParser -> [[String]] -> Point -> String -> String -> String
 willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
   where
     cell = getCellAt map1 p'
+
+{- Radius things -}
 
 getRadius :: [[String]] -> ConfigParser -> Point -> Int -> [[String]]
 getRadius map1 cf start radius_w = applyMask map1 emptyMap $ getRadiusFromPoint start radius_w
