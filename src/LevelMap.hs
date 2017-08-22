@@ -71,7 +71,7 @@ willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
 getRadius :: [[String]] -> ConfigParser -> Point -> Int -> [[String]]
 getRadius map1 cf start radius_w = applyMask map1 emptyMap $ getRadiusFromPoint start radius_w
   where
-    emptyMap = (replicate (length map1) $ (replicate (length $ head map1) " "))
+    emptyMap = map (++["\n"]) (replicate (length map1) $ (replicate (length $ head map1) " "))
 
 applyMask :: [[String]] -> [[String]] -> [Point] -> [[String]]
 applyMask tab emptyMap [] = emptyMap
