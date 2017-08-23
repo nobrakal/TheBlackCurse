@@ -114,7 +114,7 @@ useInputKeyboardMG game@(Game _ mainWin msgWin _ k _ _ _) e y_x_width
   | otherwise = State game MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 useInputKeyboardD :: Game -> Event -> Point -> State
-useInputKeyboardD game@(Game _ mainWin msgWin _ k _ _ _) e y_x_width
+useInputKeyboardD game@(Game _ mainWin msgWin _ k _ _ dialogue) e y_x_width
   | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin $ "Exiting the dialogue"
   | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
@@ -179,17 +179,13 @@ updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules _) = getS
 
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: State -> State
-testAndSayTosay (State game@(Game _ _ msgWin lm _ p@(Beast pos dir _) rules _) status action)
-  |canInteractWith lm newpos rules "tosay"= basestate $ sayToSayAt game action' newpos
-  |otherwise = if isJust action then basestate action else basestate $ Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
+testAndSayTosay (State game@(Game _ _ msgWin lm@(LevelMap map1 _ ) _ p@(Beast pos dir _) rules _) status action) = case status of
+  MainGame -> State game status $ testAndSayTosay' "tosay" "Would speak with"
+  InDialogue -> State (game {dialogue = Dialogue (willDo' "dialogue" "Would speak with") (10) }) status $testAndSayTosay' "dialogue" "Would speak with"
   where
     action' = if isJust action then fromJust action else return ()
     newpos = pos + (dirToPoint dir)
-    basestate = State game status
-
-sayToSayAt :: Game -> Curses ()-> Point -> Maybe (Curses ())
-sayToSayAt game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast pos dir pv) rules _) action p'= actDo "Would interract"
-  where
-    poss = head $ getCellAt map1 p'
-    willDo' = \x -> willDo rules map1 p' "tosay" x
-    actDo = \x -> Just $ action >> (drawClearMsg msgWin (willDo' x))
+    cannot = if isJust action then action else Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
+    testAndSayTosay' = \x y-> if canInteractWith lm newpos rules x then actDo x y else cannot
+    willDo' = \x y -> willDo rules map1 newpos x y
+    actDo = \x y -> Just $ action' >> (drawClearMsg msgWin (willDo' x y))
