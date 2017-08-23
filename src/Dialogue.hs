@@ -3,7 +3,8 @@ module Dialogue(
   getNewStartDialogue,
   getStrPart,
   getOptionsPart,
-  newDialogue
+  newDialogue,
+  showOptions
   )
 where
 
@@ -44,6 +45,13 @@ getOptionsPart str = case ind of
   where
     ind = findIndex (=='|') str
     options = map words $ explode (=='|') $ drop (fromJust ind) str
+
+showOptions :: [(String,String)] -> String
+showOptions s = showOptions' s 1
+
+showOptions' :: [(String,String)] -> Int -> String
+showOptions' [] _ = ""
+showOptions' ((_,str):xs) x = "(" ++ (show x) ++  "): " ++ str ++ "\n" ++ showOptions' xs (x+1)
 
 explode :: (Char -> Bool) -> String -> [String]
 explode _ [] = []

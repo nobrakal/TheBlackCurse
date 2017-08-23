@@ -61,6 +61,7 @@ On the [GAME] section, you can specify some attributes:
 
 * cannotgothrough: the list of the char that the player cannot go through
 * radius: the radius of view of the player. If set to 0 or less, the player can see evrything
+* msgwinheight: the height in pixel of the message window. By default to 5
 
 #### ID
 You can assign to each id (so to each string on the map file) some actions. Th esyntax is:
