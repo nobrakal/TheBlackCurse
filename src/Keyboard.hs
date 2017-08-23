@@ -24,7 +24,12 @@ data Keyboard = Keyboard {
   action :: Event,
   loadM :: Event,
   exit :: Event,
-  help :: Event
+  help :: Event,
+  one :: Event,
+  two :: Event,
+  three :: Event,
+  four :: Event,
+  five :: Event
 } deriving (Show)
 
 defaultKeyboard :: ConfigParser --default kbd
@@ -43,23 +48,35 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "load" "l"
   cp <- set cp "KEYBOARD" "quit" "ESC"
   cp <- set cp "KEYBOARD" "help" "h"
+  cp <- set cp "KEYBOARD" "one" "1"
+  cp <- set cp "KEYBOARD" "two" "2"
+  cp <- set cp "KEYBOARD" "three" "3"
+  cp <- set cp "KEYBOARD" "four" "4"
+  cp <- set cp "KEYBOARD" "five" "5"
   return cp
 
 loadKeyboard :: ConfigParser -> Keyboard
 loadKeyboard c = (Keyboard
-  (getC c "KEYBOARD" "up")
-  (getC c "KEYBOARD" "down")
-  (getC c "KEYBOARD" "left")
-  (getC c "KEYBOARD" "right")
-  (getC c "KEYBOARD" "cUp")
-  (getC c "KEYBOARD" "cDown")
-  (getC c "KEYBOARD" "cLeft")
-  (getC c "KEYBOARD" "cRight")
-  (getC c "KEYBOARD" "action")
-  (getC c "KEYBOARD" "load")
-  (getC c "KEYBOARD" "quit")
-  (getC c "KEYBOARD" "help")
+  (get "up")
+  (get "down")
+  (get "left")
+  (get "right")
+  (get "cUp")
+  (get "cDown")
+  (get "cLeft")
+  (get "cRight")
+  (get "action")
+  (get "load")
+  (get "quit")
+  (get "help")
+  (get "one")
+  (get "two")
+  (get "three")
+  (get "four")
+  (get "five")
   )
+  where
+    get = getC c "KEYBOARD"
 
 getC :: ConfigParser -> String -> String -> Event
 getC c section str =either (return $ EventCharacter 'n') (getE) $ (get c section str)

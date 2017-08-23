@@ -2,7 +2,8 @@ module Dialogue(
   Dialogue (..),
   getNewStartDialogue,
   getStrPart,
-  getOptionsPart
+  getOptionsPart,
+  newDialogue
   )
 where
 
@@ -10,9 +11,15 @@ import Space
 import UI.NCurses
 import Data.List
 import Data.Maybe
+import Data.ConfigFile
 
 data Dialogue = Dialogue {str :: String,
-  charpos :: Curses Int}
+  charpos :: Curses Int,
+  section :: SectionSpec,
+  options :: [(OptionSpec,String)]}
+
+newDialogue :: String -> SectionSpec -> Dialogue
+newDialogue str section = Dialogue str (return 0) section (getOptionsPart str)
 
 getNewStartDialogue :: String -> Int -> Direction -> Point -> Int
 getNewStartDialogue str start dir (Point _ x)
