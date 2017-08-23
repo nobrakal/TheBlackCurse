@@ -118,11 +118,12 @@ useInputKeyboardD :: Game -> Event -> State
 useInputKeyboardD game@(Game _ mainWin msgWin _ k _ rules d@(Dialogue str pos section options)) e
   | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin $ "Exiting the dialogue..."
   | elem e [one k, two k, three k, four k, five k] = runChoiceDialogue game e
-  | elem e [up k, cUp k, down k, cDown k] = State game {dialogue = d {charpos =  newpos}} InDialogue $ Just $ (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ (drop (getNewStartDialogue str' y (getDir k e) x) str' ) ++ "\n" ++ (showOptions options)
+  | elem e [up k, cUp k, down k, cDown k] = State game {dialogue = d {charpos =  newpos}} isInDialogue $ Just $ (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ (drop (getNewStartDialogue str' y (getDir k e) x) str' ) ++ "\n" ++ (showOptions options)
   | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $"Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
     str' = getStrPart str
+    isInDialogue = if length options == 0 then MainGame else InDialogue
 
 runChoiceDialogue :: Game -> Event -> State
 runChoiceDialogue game@(Game _ mainWin msgWin _ k _ rules d@(Dialogue str pos section options)) e
