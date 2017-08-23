@@ -102,7 +102,7 @@ useInput game status _ s = State game MainGame $ Just $ drawClearMsg (msgWin gam
 useInputSwitchStatus :: Game -> Event -> Status -> Point -> State
 useInputSwitchStatus g e status p  = case status of
   MainGame -> useInputKeyboardMG g e p
-  InDialogue -> useInputKeyboardD g e p
+  InDialogue -> useInputKeyboardD g e
 
 useInputKeyboardMG :: Game -> Event -> Point -> State
 useInputKeyboardMG game@(Game _ mainWin msgWin _ k _ _ _) e y_x_width
@@ -113,13 +113,14 @@ useInputKeyboardMG game@(Game _ mainWin msgWin _ k _ _ _) e y_x_width
   | e == exit k = State game MainGame Nothing
   | otherwise = State game MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
-useInputKeyboardD :: Game -> Event -> Point -> State
-useInputKeyboardD game@(Game _ mainWin msgWin _ k _ _ d@(Dialogue str pos)) e y_x_width
-  | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin $ "Exiting the dialogue"
-  | elem e [up k, cUp k, down k, cDown k] = State game {dialogue = d {charpos =  newpos}} InDialogue $ Just $ (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $  drop (getNewStartDialogue str y (getDir k e) x) str
-  | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $ "Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+useInputKeyboardD :: Game -> Event -> State
+useInputKeyboardD game@(Game _ mainWin msgWin _ k _ rules d@(Dialogue str pos)) e
+  | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin $ "Exiting the dialogue..."
+  | elem e [up k, cUp k, down k, cDown k] = State game {dialogue = d {charpos =  newpos}} InDialogue $ Just $ (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $  (drop (getNewStartDialogue str' y (getDir k e) x) str' ) ++ "\n"
+  | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $ show $ getOptionsPart str --"Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
+    str' = getStrPart str
 
 updateScreenSize :: Game -> Point -> Curses ()
 updateScreenSize game@(Game stdscr mainWin msgWin lm _ _ _ _) y_x_width =  do
@@ -182,13 +183,11 @@ updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules _) = getS
 
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: State -> State
-testAndSayTosay (State game@(Game _ _ msgWin lm@(LevelMap map1 _ ) _ p@(Beast pos dir _) rules _) status action) = case status of
-  MainGame -> State game status $ testAndSayTosay' "tosay" "Would speak with"
-  InDialogue -> State (game {dialogue = Dialogue (willDo' "dialogue" "Would speak with") (return 0) }) (if canInteractWith lm newpos rules "dialogue" then InDialogue else MainGame) $testAndSayTosay' "dialogue" "Would speak with"
+testAndSayTosay (State game@(Game _ _ msgWin lm@(LevelMap map1 _ ) k p@(Beast pos dir _) rules _) status action) = case status of
+  MainGame -> State game status $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> (drawClearMsg msgWin (willDo' "tosay" "Would speak with")) else cannot
+  InDialogue -> (if canInteractWith lm newpos rules "dialogue" then (useInputKeyboardD (game {dialogue = Dialogue (willDo' "dialogue" "Would speak with") (return 0) }) (up k) ) else State game MainGame cannot)
   where
     action' = if isJust action then fromJust action else return ()
     newpos = pos + (dirToPoint dir)
     cannot = if isJust action then action else Just $ action' >> (drawClearMsg msgWin "Cannot do anything")
-    testAndSayTosay' = \x y-> if canInteractWith lm newpos rules x then actDo x y else cannot
     willDo' = \x y -> willDo rules map1 newpos x y
-    actDo = \x y -> Just $ action' >> (drawClearMsg msgWin (willDo' x y))

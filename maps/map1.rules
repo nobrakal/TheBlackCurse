@@ -1,11 +1,12 @@
 [GAME]
 cannotgothrough=Km+-|~I
-radius=6
+radius=10
 [I]
 tosay=Lorem ipsum
 dialogue=Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 [Karthur]
-tosay=Welcome stranger, my name is Arthur
+tosay=Welcome stranger, can I have a word ?
+dialogue=My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogue_Yes Yes | dialogue_No No
 [mflames]
 tosay=Seems warm and comfy
 [*]
