@@ -11,8 +11,10 @@ $cabal build
 ## Use
 TheBlackCurse need a map and the rules file associated: they contains evrything for the game.
 ```
-./TheBlackCurse map.txt map.rules [configfile]
+dist/build/TheBlackCurse/TheBlackCurse maps/map1.txt maps/map1.rules [configfile]
 ```
+
+If you press the action key (e by default) near something that provides a dialogue, you will enter the dialogue, and need to escape it by pressing the escape key after.
 ### Config
 You can load a config file by appending its name after the map and the map.rules.
 

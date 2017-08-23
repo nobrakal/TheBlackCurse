@@ -16,7 +16,7 @@ instance Num Point where
   negate (Point a1 b1) = (Point (-a1) (-b1))
   signum (Point a1 b1) = (Point (signum a1) (signum b1))
   fromInteger i  = (Point (fromInteger i) 0) -- Or anything else
-data Direction = UP | DOWN | LEFT | RIGHT | NULL deriving (Show)
+data Direction = UP | DOWN | LEFT | RIGHT | NULL deriving (Show, Eq)
 
 dirToPoint :: Direction -> Point
 dirToPoint UP = Point (-1) 0

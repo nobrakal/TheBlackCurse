@@ -3,7 +3,8 @@ module Draw
   drawTab,
   makeBorders,
   getScreenSize,
-  drawClearMsg'
+  drawClearMsg',
+  getWindowSize
   )
 
 where
@@ -23,7 +24,7 @@ drawClearMsg' y_x_width str = do
   let winW = ((y y_x_width)*(x y_x_width))
   if (length str) <= winW
      then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1
-     else drawString "Msg too big"
+     else drawString $ take (winW-1) str
 
 -- Draw a tab of String
 drawTab :: Window -> Point -> [[String]] -> Curses ()
@@ -55,3 +56,6 @@ makeBorders win (Point pos_y' pos_x') (Point y' x') = updateWindow win $ do
 
 getScreenSize :: Curses Point
 getScreenSize = screenSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))
+
+getWindowSize :: Update Point
+getWindowSize = windowSize >>= \arg -> (return (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))))

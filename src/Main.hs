@@ -74,7 +74,7 @@ main = do
 
     let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10
 
-    let game = (Game stdscr mainWin msgWin map1 keyboard player fileRules (Dialogue "" 0))
+    let game = (Game stdscr mainWin msgWin map1 keyboard player fileRules (Dialogue "" (return 0)))
 
     updateCamera game
     render
@@ -114,9 +114,12 @@ useInputKeyboardMG game@(Game _ mainWin msgWin _ k _ _ _) e y_x_width
   | otherwise = State game MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
 
 useInputKeyboardD :: Game -> Event -> Point -> State
-useInputKeyboardD game@(Game _ mainWin msgWin _ k _ _ dialogue) e y_x_width
+useInputKeyboardD game@(Game _ mainWin msgWin _ k _ _ d@(Dialogue str pos)) e y_x_width
   | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin $ "Exiting the dialogue"
-  | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
+  | elem e [up k, cUp k, down k, cDown k] = State game {dialogue = d {charpos =  newpos}} InDialogue $ Just $ (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $  drop (getNewStartDialogue str y (getDir k e) x) str
+  | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $ "Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+  where
+    newpos = (id pos) >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
 
 updateScreenSize :: Game -> Point -> Curses ()
 updateScreenSize game@(Game stdscr mainWin msgWin lm _ _ _ _) y_x_width =  do
@@ -162,7 +165,7 @@ testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast p
   in let isOk = (isOnDisplayableMap (LevelMap map1 po) newpos) && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ (invertAtIndex (y pos) (x pos)  map1)
-           g = game { player = p {pos=poskOkPlayer}, m = lm {levelMap = newmap}}
+           g = game { player = p {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
            basestate = State g MainGame
            in if isOk
                 then testAndSayTosay (basestate $ Just $ updateCamera g>> drawClearMsg msgWin "Player moved")
@@ -181,7 +184,7 @@ updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules _) = getS
 testAndSayTosay :: State -> State
 testAndSayTosay (State game@(Game _ _ msgWin lm@(LevelMap map1 _ ) _ p@(Beast pos dir _) rules _) status action) = case status of
   MainGame -> State game status $ testAndSayTosay' "tosay" "Would speak with"
-  InDialogue -> State (game {dialogue = Dialogue (willDo' "dialogue" "Would speak with") (10) }) status $testAndSayTosay' "dialogue" "Would speak with"
+  InDialogue -> State (game {dialogue = Dialogue (willDo' "dialogue" "Would speak with") (return 0) }) (if canInteractWith lm newpos rules "dialogue" then InDialogue else MainGame) $testAndSayTosay' "dialogue" "Would speak with"
   where
     action' = if isJust action then fromJust action else return ()
     newpos = pos + (dirToPoint dir)
