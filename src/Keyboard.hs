@@ -23,6 +23,7 @@ data Keyboard = Keyboard {
   cRight :: Event,
   action :: Event,
   loadM :: Event,
+  saveM :: Event,
   exit :: Event,
   help :: Event,
   one :: Event,
@@ -46,6 +47,7 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "cRight" "KeyRightArrow"
   cp <- set cp "KEYBOARD" "action" "e"
   cp <- set cp "KEYBOARD" "load" "l"
+  cp <- set cp "KEYBOARD" "save" "m"
   cp <- set cp "KEYBOARD" "quit" "ESC"
   cp <- set cp "KEYBOARD" "help" "h"
   cp <- set cp "KEYBOARD" "one" "1"
@@ -66,6 +68,7 @@ loadKeyboard c = Keyboard
   (get "cRight")
   (get "action")
   (get "load")
+  (get "save")
   (get "quit")
   (get "help")
   (get "one")

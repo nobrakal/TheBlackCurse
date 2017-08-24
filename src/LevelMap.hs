@@ -2,6 +2,7 @@ module LevelMap (
   LevelMap (..),
   Map (..),
   loadMap,
+  toStr,
   isOnDisplayableMap,
   getCurrentDisplay,
   getCellAt,
@@ -25,6 +26,9 @@ loadMap :: String -> Point -> LevelMap
 loadMap file currul = do
   let file_map = map (++ ["\n"])$ map words $lines file -- ++ [[" "]]
   LevelMap file_map currul
+
+toStr :: Map -> String
+toStr = concatMap concat
 
 getmaxLength :: [[a]] -> Int
 getmaxLength = foldr (max . length) 0

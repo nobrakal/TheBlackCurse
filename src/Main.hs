@@ -16,18 +16,24 @@ import Dialogue
 
 -- NOTE: Curses is a wrapper for IO
 
-data Game = Game {
+data Common = Common {
   stdscr :: Window,
   mainWin :: Window,
   msgWin :: Window,
+  mapPath :: FilePath,
+  rulesPath :: FilePath,
+  keyboard :: Keyboard
+}
+
+data Game = Game {
   m :: LevelMap,
-  keyboard :: Keyboard,
   player :: Beast,
   rules :: ConfigParser,
   dialogue :: Dialogue
 }
 
 data State = State {
+  common :: Common,
   game :: Game,
   status :: Status,
   todo :: Maybe (Curses ())
@@ -40,11 +46,13 @@ main = do
   args <- getArgs
 
   -- Load the map file
-  e <- tryJust (guard . isDoesNotExistError) (readFile $ if 1<=length args then head args else "./maps/map1.txt")
+  let mapPath = if 1<=length args then head args else "./maps/map1.txt"
+  e <- tryJust (guard . isDoesNotExistError) (readFile mapPath)
   let file = either (return ".") id e
 
   -- Load the rule file
-  fr <- readfile emptyCP $ if 2<=length args then head $ tail args else "./maps/map1.rules"
+  let rulesPath = if 2<=length args then head $ tail args else "./maps/map1.rules"
+  fr <- readfile emptyCP rulesPath
   let fileRules = either (return emptyCP) id fr
 
   -- Load the config file if provided
@@ -71,63 +79,67 @@ main = do
 
     let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10
 
-    let game = Game stdscr mainWin msgWin map1 keyboard player fileRules (newDialogue "" "DEFAULT")
+    let common = Common stdscr mainWin msgWin mapPath rulesPath keyboard
+    let game = Game map1 player fileRules (newDialogue "" "DEFAULT")
 
-    updateCamera game
+    updateCamera mainWin game
     render
 
-    mainLoop (State game MainGame action) -- Run mainLoop
+    mainLoop (State common game MainGame action) -- Run mainLoop
 
 
 msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
 
 mainLoop :: State -> Curses ()
-mainLoop (State game status (Just todo) )= do
+mainLoop (State common game status (Just todo) )= do
   todo
   render
-  inp <- getEvent (stdscr game) Nothing
+  inp <- getEvent (stdscr common) Nothing
   y_x_width <- getScreenSize
-  mainLoop (useInput game status y_x_width inp)
+  mainLoop (useInput common game status y_x_width inp)
 
-mainLoop (State _ _ Nothing) = return ()
+mainLoop (State _ _ _ Nothing) = return ()
 
-useInput :: Game -> Status -> Point -> Maybe Event -> State
-useInput game status y_x_width (Just e) = case e of
-  (EventCharacter c) -> useInputSwitchStatus game (EventCharacter c) status $ calculateMainWinSize (rules game) y_x_width
-  (EventSpecialKey s) -> useInputSwitchStatus game (EventSpecialKey s) status $ calculateMainWinSize (rules game) y_x_width
-  EventResized -> State game MainGame $ Just $ updateScreenSize game y_x_width
-  (EventUnknown s) -> State game MainGame $ Just $ drawClearMsg (msgWin game) $"ERROR WITH EVENT" ++ show s  -- ERROR
-useInput game status _ s = State game MainGame $ Just $ drawClearMsg (msgWin game) (show s)  -- Any other input
+useInput :: Common -> Game -> Status -> Point -> Maybe Event -> State
+useInput com game status y_x_width (Just e) = case e of
+  (EventCharacter c) -> useInputSwitchStatus com game (EventCharacter c) status $ calculateMainWinSize (rules game) y_x_width
+  (EventSpecialKey s) -> useInputSwitchStatus com game (EventSpecialKey s) status $ calculateMainWinSize (rules game) y_x_width
+  EventResized -> State com game MainGame $ Just $ updateScreenSize com game y_x_width
+  (EventUnknown s) -> State com game MainGame $ Just $ drawClearMsg (msgWin com) $"ERROR WITH EVENT" ++ show s  -- ERROR
+useInput com g status _ s = State com g MainGame $ Just $ drawClearMsg (msgWin com) (show s)  -- Any other input
 
-useInputSwitchStatus :: Game -> Event -> Status -> Point -> State
-useInputSwitchStatus g e status p  = case status of
-  MainGame -> useInputKeyboardMG g e p
-  InDialogue -> useInputKeyboardD g e p
+useInputSwitchStatus :: Common -> Game -> Event -> Status -> Point -> State
+useInputSwitchStatus c g e status p  = case status of
+  MainGame -> useInputKeyboardMG c g e p
+  InDialogue -> useInputKeyboardD c g e p
 
-useInputKeyboardMG :: Game -> Event -> Point -> State
-useInputKeyboardMG game@(Game _ mainWin msgWin _ k _ _ _) e y_x_width
-  | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC game (getDir k e) y_x_width
-  | e `elem` [up k, down k, left k, right k] = testAndMoveP game (getDir k e) y_x_width
-  | e == action k = testAndSayTosay (State game InDialogue Nothing) y_x_width
-  | e == help k = State game InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
-  | e == exit k = State game MainGame Nothing
-  | otherwise = State game MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
+useInputKeyboardMG :: Common -> Game -> Event -> Point -> State
+useInputKeyboardMG com@(Common _ mainWin msgWin mapPath _ k) game e y_x_width
+  | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC com game (getDir k e) y_x_width
+  | e `elem` [up k, down k, left k, right k] = testAndMoveP com game (getDir k e) y_x_width
+  | e == action k = testAndSayTosay (basestate InDialogue Nothing) y_x_width
+  | e == help k = basestate InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
+  | e == saveM k = basestate MainGame $ Just $ drawClearMsg msgWin "Will save when implemented "  -- Just $ writeFile mapPath (toStr $ levelMap $ m game)
+  | e == exit k = basestate MainGame Nothing
+  | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
+  where basestate = State com game
 
-useInputKeyboardD :: Game -> Event -> Point -> State
-useInputKeyboardD game@(Game _ mainWin msgWin _ k _ rules d@(Dialogue str pos section options)) e p
-  | e == exit k = State game MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
-  | e `elem` [one k, two k, three k, four k, five k] = runChoiceDialogue game e p
-  | e `elem` [up k, cUp k, down k, cDown k] = State game {dialogue = d {charpos =  newpos}} isInDialogue $ Just $ pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ drop (getNewStartDialogue str' y (getDir k e) x) str' ++ "\n" ++ showOptions options
-  | otherwise = State game InDialogue $ Just $ drawClearMsg msgWin $"Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+useInputKeyboardD :: Common ->  Game -> Event -> Point -> State
+useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules d@(Dialogue str pos section options)) e p
+  | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
+  | e `elem` [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
+  | e `elem` [up k, cUp k, down k, cDown k] = State com game {dialogue = d {charpos =  newpos}} isInDialogue $ Just $ pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ drop (getNewStartDialogue str' y (getDir k e) x) str' ++ "\n" ++ showOptions options
+  | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin $"Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
     str' = getStrPart str
     msg = calculateMsgWinSize rules p
     isInDialogue = if null options && length str < x msg * y msg then MainGame else InDialogue
+    basestate = State com game
 
-runChoiceDialogue :: Game -> Event -> Point -> State
-runChoiceDialogue game@(Game _ mainWin msgWin _ k _ rules d@(Dialogue str pos section options)) e p
+runChoiceDialogue :: Common -> Game -> Event -> Point -> State
+runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules d@(Dialogue str pos section options)) e p
   | e == one k = run 1
   | e == two k = run 2
   | e == three k = run 3
@@ -136,11 +148,11 @@ runChoiceDialogue game@(Game _ mainWin msgWin _ k _ rules d@(Dialogue str pos se
   where
     maybeOption x =if length options > (x-1) then Just $ options !! (x-1) else Nothing
     run x =case maybeOption x of
-      Just x' -> useInputKeyboardD (game {dialogue = newDialogue (either (const "ERROR: DIALOGUE NOT FOUND") id $ get rules section (fst x') ) section}) (up k) p
-      Nothing -> State game InDialogue $ Just $ drawClearMsg msgWin "This choice doesn't exist"
+      Just x' -> useInputKeyboardD com (game {dialogue = newDialogue (either (const "ERROR: DIALOGUE NOT FOUND") id $ get rules section (fst x') ) section}) (up k) p
+      Nothing -> State com game InDialogue $ Just $ drawClearMsg msgWin "This choice doesn't exist"
 
-updateScreenSize :: Game -> Point -> Curses ()
-updateScreenSize game@(Game stdscr mainWin msgWin lm _ _ rules _) y_x_width =  do
+updateScreenSize :: Common -> Game -> Point -> Curses ()
+updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game@(Game lm _ rules _) y_x_width =  do
   updateWindow mainWin clear
   updateWindow msgWin clear
   let msdim = calculateMsgWinSize rules y_x_width
@@ -148,7 +160,7 @@ updateScreenSize game@(Game stdscr mainWin msgWin lm _ _ rules _) y_x_width =  d
   updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
   updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
   updateBorders rules stdscr y_x_width
-  updateCamera game
+  updateCamera mainWin game
   drawClearMsg msgWin "Resized"
 
 calculateMainWinSize :: ConfigParser -> Point -> Point
@@ -166,32 +178,32 @@ updateBorders c stdscr y_x_width = do
   makeBorders stdscr (Point (msgWinHeight c) 0) (Point (y mwdim +2) (x mwdim+2) )-- Make borders of mainWin
 
 -- Test if we can move the camera then does it else say it cannot
-testAndMoveC :: Game -> Direction -> Point -> State
-testAndMoveC game@(Game _ _ msgWin lm@(LevelMap _ currul) _ _ _ _ ) s winsize =
+testAndMoveC :: Common -> Game -> Direction -> Point -> State
+testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ ) s winsize =
   let newul@(Point ny nx) = currul + dirToPoint s
   in let isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + Point (-1) (-1))
     in let posOkUl = if isOk then newul else currul
            action = if isOk
-                      then Just $ updateCamera (game {m = lm {currul = newul}}) >> drawClearMsg msgWin "Camera moved"
-                      else Just $ drawClearMsg msgWin "Could not move the camera"
-                      in State game {m = lm {currul = posOkUl}} MainGame action
+                      then Just $ updateCamera (mainWin com) (game {m = lm {currul = newul}}) >> drawClearMsg (msgWin com) "Camera moved"
+                      else Just $ drawClearMsg (msgWin com) "Could not move the camera"
+                      in State com game {m = lm {currul = posOkUl}} MainGame action
 
 -- Test and run the player move
-testAndMoveP :: Game -> Direction -> Point -> State
-testAndMoveP game@(Game stdscr mainWin msgWin lm@(LevelMap map1 po) k p@(Beast pos dir pv) rules _ ) s winsize =
+testAndMoveP :: Common -> Game -> Direction -> Point -> State
+testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) p@(Beast pos dir pv) rules _ ) s winsize =
   let newpos = pos + dirToPoint s
   in let isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
            newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ invertAtIndex (y pos) (x pos)  map1
            g = game { player = p {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
-           basestate = State g MainGame
+           basestate = State com g MainGame
            in if isOk
-                then testAndSayTosay (basestate $ Just $ updateCamera g>> drawClearMsg msgWin "Player moved") winsize
+                then testAndSayTosay (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
                 else testAndSayTosay (basestate Nothing) winsize
 
 -- Move the camera (do not do any test)
-updateCamera :: Game -> Curses()
-updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
+updateCamera :: Window -> Game -> Curses()
+updateCamera win (Game (LevelMap map1 p ) (Beast pos _ _) rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
   where
     radius = either (const 0) read $ get rules "GAME" "radius"
     actualmap = if 0 < radius
@@ -200,9 +212,9 @@ updateCamera (Game _ win _  (LevelMap map1 p ) _ (Beast pos _ _) rules _) = getS
 
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: State -> Point -> State
-testAndSayTosay (State game@(Game _ _ msgWin lm@(LevelMap map1 _ ) k p@(Beast pos dir _) rules _) status action) p' = case status of
-  MainGame -> State game status $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg msgWin (willDo' "tosay" "Would speak with") else cannot
-  InDialogue -> if canInteractWith lm newpos rules "dialogue" then useInputKeyboardD (game {dialogue = newDialogue (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up k) p' else State game MainGame cannot
+testAndSayTosay (State com@(Common _ _ msgWin _ _ k) game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _) rules _) status action) p' = case status of
+  MainGame -> State com game status $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg msgWin (willDo' "tosay" "Would speak with") else cannot
+  InDialogue -> if canInteractWith lm newpos rules "dialogue" then useInputKeyboardD com (game {dialogue = newDialogue (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up k) p' else State com game MainGame cannot
   where
     action' = fromMaybe (return ()) action
     newpos = pos + dirToPoint dir
