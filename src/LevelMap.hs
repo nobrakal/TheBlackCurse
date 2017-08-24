@@ -1,5 +1,6 @@
 module LevelMap (
   LevelMap (..),
+  Map (..),
   loadMap,
   isOnDisplayableMap,
   getCurrentDisplay,
@@ -14,18 +15,19 @@ where
 import Space
 import Data.ConfigFile
 
-data LevelMap = LevelMap {levelMap :: [[String]],
+type Map = [[String]]
+
+data LevelMap = LevelMap {levelMap :: Map,
   currul :: Point -- Current upper left corner of the displayed area
 }
 
 loadMap :: String -> Point -> LevelMap
 loadMap file currul = do
-  let file_map = (map (++ ["\n"])$ map words $lines file) -- ++ [[" "]]
+  let file_map = map (++ ["\n"])$ map words $lines file -- ++ [[" "]]
   LevelMap file_map currul
 
 getmaxLength :: [[a]] -> Int
-getmaxLength [] = 0
-getmaxLength (x:xs) = max (length x) (getmaxLength xs)
+getmaxLength = foldr (max . length) 0
 
 -- Return true if the point is on the map
 isOnDisplayableMap :: LevelMap -> Point -> Bool
@@ -35,18 +37,18 @@ isOnDisplayableMap (LevelMap tab _) (Point y x) = (x>=0) && (y>=0) && (x < xw) &
     xw = (-1) + length (head tab)
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
-getCurrentDisplay :: [[String]] -> Point -> Point -> [[String]]
+getCurrentDisplay :: [[String]] -> Point -> Point -> Map
 getCurrentDisplay tab (Point starty startx) (Point height width) = take height $ map (take width) $ drop starty $ map (drop startx) tab
 
 getCellAt :: [[a]] -> Point -> a
 getCellAt tab (Point y x) = (tab !! y) !! x
 
 -- Find the "@" on the map
-getCharPos :: [[String]] -> Char -> Int -> Int-> Point
+getCharPos :: Map -> Char -> Int -> Int-> Point
 getCharPos tab@((x:xs):xs') c y x'
-  | (head $ head $ head tab) == c = Point y x'
-  | xs' == [] && xs == [] = Point (-1) (-1)
-  | xs == [] = getCharPos xs' c (y+1) 0
+  | head ( head $ head tab )== c = Point y x'
+  | null xs' && null xs = Point (-1) (-1)
+  | null xs = getCharPos xs' c (y+1) 0
   | otherwise = getCharPos (xs:xs') c y (x'+1)
 
 {- Interract things -}
@@ -71,7 +73,7 @@ willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
 getRadius :: [[String]] -> ConfigParser -> Point -> Int -> [[String]]
 getRadius map1 cf start radius_w = applyMask map1 emptyMap $ getRadiusFromPoint start radius_w
   where
-    emptyMap = map (++["\n"]) (replicate (length map1) $ (replicate (length $ head map1) " "))
+    emptyMap = replicate (length map1) ((++ ["\n"]) (replicate (length $ head map1) " "))
 
 applyMask :: [[String]] -> [[String]] -> [Point] -> [[String]]
 applyMask tab emptyMap [] = emptyMap

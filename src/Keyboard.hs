@@ -52,11 +52,10 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "two" "2"
   cp <- set cp "KEYBOARD" "three" "3"
   cp <- set cp "KEYBOARD" "four" "4"
-  cp <- set cp "KEYBOARD" "five" "5"
-  return cp
+  set cp "KEYBOARD" "five" "5"
 
 loadKeyboard :: ConfigParser -> Keyboard
-loadKeyboard c = (Keyboard
+loadKeyboard c = Keyboard
   (get "up")
   (get "down")
   (get "left")
@@ -74,12 +73,11 @@ loadKeyboard c = (Keyboard
   (get "three")
   (get "four")
   (get "five")
-  )
   where
     get = getC c "KEYBOARD"
 
 getC :: ConfigParser -> String -> String -> Event
-getC c section str =either (return $ EventCharacter 'n') (getE) $ (get c section str)
+getC c section str = either (return $ EventCharacter 'n') getE $ get c section str
 
 getE :: String -> Event
 getE s

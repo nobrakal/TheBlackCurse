@@ -36,14 +36,14 @@ getStrPart str = case ind of
   Just s ->  take (s-1) str
   Nothing -> str
   where
-    ind = findIndex (=='|') str
+    ind = elemIndex '|' str
 
 getOptionsPart :: String -> [(String,String)]
 getOptionsPart str = case ind of
   Just s -> zip( map head options) (map (\x -> if length x > 1 then x !!1 else head x) options)
   Nothing -> []
   where
-    ind = findIndex (=='|') str
+    ind = elemIndex '|' str
     options = map words $ explode (=='|') $ drop (fromJust ind) str
 
 showOptions :: [(String,String)] -> String
@@ -51,12 +51,12 @@ showOptions s = showOptions' s 1
 
 showOptions' :: [(String,String)] -> Int -> String
 showOptions' [] _ = ""
-showOptions' ((_,str):xs) x = "(" ++ (show x) ++  "): " ++ str ++ "\n" ++ showOptions' xs (x+1)
+showOptions' ((_,str):xs) x = "(" ++ show x ++  "): " ++ str ++ "\n" ++ showOptions' xs (x+1)
 
 explode :: (Char -> Bool) -> String -> [String]
 explode _ [] = []
 explode f xs
     | null zs = [z]
     | null z  = explode f (tail zs)
-    | True    = z : explode f (tail zs)
+    | otherwise = z : explode f (tail zs)
         where (z, zs) = break f xs

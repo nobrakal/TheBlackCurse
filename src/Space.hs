@@ -10,12 +10,12 @@ module Space
 
 data Point = Point {y :: Int, x :: Int} deriving (Show, Eq) -- To represent a point on the map
 instance Num Point where
-  (Point a1 b1) + (Point a2 b2) = (Point (a1+a2) (b1+b2))
-  (Point a1 b1) * (Point a2 b2) = (Point (a1*a2) (b1*b2))
-  abs (Point a1 b1) = (Point (abs a1) (abs b1))
-  negate (Point a1 b1) = (Point (-a1) (-b1))
-  signum (Point a1 b1) = (Point (signum a1) (signum b1))
-  fromInteger i  = (Point (fromInteger i) 0) -- Or anything else
+  (Point a1 b1) + (Point a2 b2) = Point (a1+a2) (b1+b2)
+  (Point a1 b1) * (Point a2 b2) = Point (a1*a2) (b1*b2)
+  abs (Point a1 b1) = Point (abs a1) (abs b1)
+  negate (Point a1 b1) = Point (-a1) (-b1)
+  signum (Point a1 b1) = Point (signum a1) (signum b1)
+  fromInteger i  = Point (fromInteger i) 0 -- Or anything else
 data Direction = UP | DOWN | LEFT | RIGHT | NULL deriving (Show, Eq)
 
 dirToPoint :: Direction -> Point
@@ -45,7 +45,7 @@ getRadiusFromPoint start@(Point starty startx) radius_w = getRadiusFromPoint' st
     listx = [(startx-radius_w)..(startx+radius_w)]
 
 getListOfPoint :: [Int] -> [Int] -> [Point]
-getListOfPoint y x = concat $ map (\x -> zipWith (Point) y (repeat x)) (x)
+getListOfPoint y = concatMap (zipWith Point y . repeat)
 
 getRadiusFromPoint' :: Point -> Int -> [Point] -> [Point]
 getRadiusFromPoint' start radius_w [] = []
