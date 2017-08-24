@@ -67,15 +67,15 @@ canGoTrough (LevelMap map1 _) p cp
  | elem (head (getCellAt map1 p) ) $ either (const "") id $ get cp "GAME" "cannotgothrough" = False
  | otherwise = True
 
-willDo :: ConfigParser -> [[String]] -> Point -> String -> String -> String
+willDo :: ConfigParser -> Map -> Point -> String -> String -> String
 willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
   where
     cell = getCellAt map1 p'
 
 {- Radius things -}
 
-getRadius :: [[String]] -> ConfigParser -> Point -> Int -> [[String]]
-getRadius map1 cf start radius_w = applyMask map1 emptyMap $ getRadiusFromPoint start radius_w
+getRadius :: Map -> ConfigParser -> Point -> Int -> Map
+getRadius map1 cf start radius_w = applyMask map1 emptyMap $ makeShadow' cf map1 start $ onlyExistingPoint map1 $ getRadiusFromPoint start radius_w
   where
     emptyMap = replicate (length map1) ((++ ["\n"]) (replicate (length $ head map1) " "))
 
@@ -90,3 +90,23 @@ replaceByStr tab y x str = a ++ ((a' ++ (str:(if b' /= [] then tail b' else b'))
   where
     (a,b@(x':xs)) = splitAt y tab
     (a',b') = splitAt x x'
+
+{- Detect things between the player and the rest of the world -}
+makeShadow' :: ConfigParser -> Map -> Point -> [Point] -> [Point]
+makeShadow' cf tab start t = makeShadow cf tab start (if null t then Point 0 0 else head t) t
+
+makeShadow :: ConfigParser -> Map -> Point -> Point -> [Point] -> [Point]
+makeShadow _ _ _ _ [] = []
+makeShadow cf tab start curr t@(x:xs)
+  | newpos == start = x : makeShadow cf tab start (nullOrP xs) xs
+  | otherwise = if head (getCellAt tab newpos) `elem` cannotSee then makeShadow cf tab start (nullOrP xs) xs else makeShadow cf tab start newpos t
+  where
+    newpos = curr + signum (start - curr)
+    cannotSee = either (const "") id $ get cf "GAME" "cannotseethrough"
+    nullOrP xs = if null xs then Point 0 0 else head xs
+
+onlyExistingPoint ::  Map -> [Point] -> [Point]
+onlyExistingPoint _ [] = []
+onlyExistingPoint tab (x:xs)
+  | isOnDisplayableMap (LevelMap tab (Point 0 0)) x = x : onlyExistingPoint tab xs
+  | otherwise = onlyExistingPoint tab xs

@@ -1,5 +1,6 @@
 [GAME]
 cannotgothrough=Km+-|~I
+cannotseethrough=+-|I
 radius=10
 msgwinheight=7
 [I]
