@@ -68,7 +68,7 @@ You can assign to each id (so to each string on the map file) some options. The 
 [id]
 someoption=sometext
 
-To define a monster, you will have to specify a "hp" option
+To define a monster, you will have to specify a "hp" option. The combat will be run if and only if the dialogue option is absent of the section.
 
 Options avaible are:
 * tosay: Displayed when the character go through or interract with the object

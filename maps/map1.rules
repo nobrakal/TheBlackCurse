@@ -2,7 +2,7 @@
 tosay: It's dark here
 
 [GAME]
-cannotgothrough: Km+-|~I
+cannotgothrough: Km+-|~IZ
 cannotseethrough: +-|I
 msgwinheight: 7
 radius: 10

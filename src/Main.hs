@@ -178,27 +178,27 @@ updateBorders c stdscr y_x_width = do
 
 -- Test if we can move the camera then does it else say it cannot
 testAndMoveC :: Common -> Game -> Direction -> Point -> State
-testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ ) s winsize =
-  let newul@(Point ny nx) = currul + dirToPoint s
-  in let isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + Point (-1) (-1))
-    in let posOkUl = if isOk then newul else currul
-           action = if isOk
-                      then Just $ updateCamera (mainWin com) (game {m = lm {currul = newul}}) >> drawClearMsg (msgWin com) "Camera moved"
-                      else Just $ drawClearMsg (msgWin com) "Could not move the camera"
-                      in State com game {m = lm {currul = posOkUl}} MainGame action
+testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ ) s winsize = State com game {m = lm {currul = posOkUl}} MainGame action
+  where
+    newul@(Point ny nx) = currul + dirToPoint s
+    isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + Point (-1) (-1))
+    posOkUl = if isOk then newul else currul
+    action = if isOk
+      then Just $ updateCamera (mainWin com) (game {m = lm {currul = newul}}) >> drawClearMsg (msgWin com) "Camera moved"
+      else Just $ drawClearMsg (msgWin com) "Could not move the camera"
 
 -- Test and run the player move
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
-testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) p@(Beast pos _ _ _) rules _ ) s winsize =
-  let newpos = pos + dirToPoint s
-  in let isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
-    in let poskOkPlayer = if isOk then newpos else pos
-           newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ removeFirstCharAt (y pos) (x pos)  map1
-           g = game { player = p {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
-           basestate = State com g MainGame
-           in if isOk
-                then testAndSayTosay (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
-                else testAndSayTosay (basestate Nothing) winsize
+testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b rules _ ) s winsize = if isOk
+  then testAndSayTosay (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
+  else testAndSayTosay (basestate Nothing) winsize
+  where
+    newpos = pos b + dirToPoint s
+    isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
+    poskOkPlayer = if isOk then newpos else pos b
+    newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ removeFirstCharAt (y $ pos b) (x $ pos b)  map1
+    g = game { player = b {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
+    basestate = State com g MainGame
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> Game -> Curses()
