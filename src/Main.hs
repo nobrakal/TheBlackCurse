@@ -129,7 +129,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
 useInputKeyboardD :: Common ->  Game -> Event -> Point -> State
 useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules d@(Dialogue str pos section options)) e p
   | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
-  | e `elem` [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
+  | e `elem` take (length options)[one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
   | e `elem` [up k, cUp k, down k, cDown k] = State com game {dialogue = d {charpos =  newpos}} isInDialogue $ Just $ pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ drop (getNewStartDialogue str' y (getDir k e) x) str' ++ "\n" ++ showOptions options
   | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin $"Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
@@ -147,10 +147,7 @@ runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules d@(Di
   | e == four k = run 4
   | e == five k = run 5
   where
-    maybeOption x =if length options > (x-1) then Just $ options !! (x-1) else Nothing
-    run x =case maybeOption x of
-      Just x' -> useInputKeyboardD com (game {dialogue = newDialogue (either (const "ERROR: DIALOGUE NOT FOUND") id $ get rules section (fst x') ) section}) (up k) p
-      Nothing -> State com game InDialogue $ Just $ drawClearMsg msgWin "This choice doesn't exist"
+    run x' =useInputKeyboardD com (game {dialogue = newDialogue (either (const "ERROR IN DIALOGUE") id $ get rules section (fst $ options !! (x'-1)) ) section}) (up k) p
 
 updateScreenSize :: Common -> Game -> Point -> Curses ()
 updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game@(Game lm _ rules _) y_x_width =  do
