@@ -10,7 +10,9 @@ import LevelMap
 
 data Beast = Beast {pos :: Point,
   look :: Direction,
-  pv :: Int}
+  hp :: Int,
+  dammage :: Int
+}
 
 -- WORK ONLY if length tab[y][x] >1
 {- invertAtIndex :: Int -> Int -> Map -> Map

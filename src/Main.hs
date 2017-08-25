@@ -78,7 +78,7 @@ main = do
     let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
     let keyboard = loadKeyboard $ merge defaultKeyboard configFile
 
-    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10
+    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2
 
     let common = Common stdscr mainWin msgWin mapPath rulesPath keyboard
     let game = Game map1 player fileRules (newDialogue fileRules "" "DEFAULT")
@@ -189,7 +189,7 @@ testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ ) s winsize =
 
 -- Test and run the player move
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
-testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) p@(Beast pos dir pv) rules _ ) s winsize =
+testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) p@(Beast pos _ _ _) rules _ ) s winsize =
   let newpos = pos + dirToPoint s
   in let isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
@@ -202,16 +202,16 @@ testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap ma
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> Game -> Curses()
-updateCamera win (Game (LevelMap map1 p ) (Beast pos _ _) rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
+updateCamera win (Game (LevelMap map1 p ) b rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
   where
     radius = either (const 0) read $ get rules "GAME" "radius"
     actualmap = if 0 < radius
-      then getRadius map1 rules pos radius
+      then getRadius map1 rules (pos b) radius
       else map1
 
 -- Test if can do something, and if possible actually do it
 testAndSayTosay :: State -> Point -> State
-testAndSayTosay (State com@(Common _ _ msgWin _ _ k) game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _) rules _) status action) p' = case status of
+testAndSayTosay (State com@(Common _ _ msgWin _ _ k) game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _ _) rules _) status action) p' = case status of
   MainGame -> State com game status $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg msgWin (willDo' "tosay" "Would speak with") else cannot
   InDialogue -> if canInteractWith lm newpos rules "dialogue" then useInputKeyboardD com (game {dialogue = newDialogue rules (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up k) p' else State com game MainGame cannot
   where

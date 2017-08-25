@@ -64,11 +64,14 @@ On the [GAME] section, you can specify some attributes:
 * msgwinheight: the height in pixel of the message window. By default to 5
 
 #### ID
-You can assign to each id (so to each string on the map file) some actions. The syntax is:
+You can assign to each id (so to each string on the map file) some options. The syntax is:
 [id]
-someaction=sometext
+someoption=sometext
 
-Actions avaible are:
+To define a monster, you will have to specify a "hp" option
+
+Options avaible are:
 * tosay: Displayed when the character go through or interract with the object
 * dialogue: Diplayed when the player interract with the objet. You can specify responses by adding at the end of the line | action1 Text Disp | action2 Text where action1 and action2 are option in the same section of the config file and "Text Disp" and "Text" are the texts displayed.
-* lastoption: Last option used in the dialogue, it will be diplayed if the player attemp a new dialogue
+* lastoption: Last option used in the dialogue, it will be diplayed if the player attempt a new dialogue
+* hp: Health points of the object
