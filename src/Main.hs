@@ -192,7 +192,7 @@ testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap ma
   let newpos = pos + dirToPoint s
   in let isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
     in let poskOkPlayer = if isOk then newpos else pos
-           newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ invertAtIndex (y pos) (x pos)  map1
+           newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ removeFirstCharAt (y pos) (x pos)  map1
            g = game { player = p {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
            basestate = State com g MainGame
            in if isOk

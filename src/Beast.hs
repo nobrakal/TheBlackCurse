@@ -1,6 +1,6 @@
 module Beast
     ( Beast (..),
-    invertAtIndex,
+    removeFirstCharAt,
     moveCAtPos
     )
 where
@@ -13,11 +13,17 @@ data Beast = Beast {pos :: Point,
   pv :: Int}
 
 -- WORK ONLY if length tab[y][x] >1
-invertAtIndex :: Int -> Int -> Map -> Map
+{- invertAtIndex :: Int -> Int -> Map -> Map
 invertAtIndex y x tab=
   let (posy, posy',posx,posx') = truncateAt y x tab
       oldstr = (tab !! y) !! x
-  in posy ++ [posx ++ [([head $ tail oldstr] ++ [head oldstr]) ++ tail (tail oldstr)] ++ posx'] ++ posy'
+  in posy ++ [posx ++ [([head $ tail oldstr] ++ [head oldstr]) ++ tail (tail oldstr)] ++ posx'] ++ posy' -}
+
+removeFirstCharAt :: Int -> Int -> Map -> Map
+removeFirstCharAt y x tab=
+  let (posy, posy',posx,posx') = truncateAt y x tab
+      oldstr = (tab !! y) !! x
+  in posy ++ [posx ++ [tail oldstr] ++ posx'] ++ posy'
 
 -- Add a c at the pos
 moveCAtPos :: Int -> Int -> Char -> Map -> Map
