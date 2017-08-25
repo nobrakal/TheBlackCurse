@@ -15,6 +15,7 @@ tosay: Lorem ipsum
 dialogue: My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogueyes Yes | dialogueno No
 dialogueno: Too bad, come back later
 dialogueyes: Thank you. Here is the story of the black plague...
+lastoption: dialogueyes
 tosay: Welcome stranger, can I have a word ?
 
 [mflames]

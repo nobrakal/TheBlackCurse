@@ -81,7 +81,7 @@ main = do
     let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10
 
     let common = Common stdscr mainWin msgWin mapPath rulesPath keyboard
-    let game = Game map1 player fileRules (newDialogue "" "DEFAULT")
+    let game = Game map1 player fileRules (newDialogue fileRules "" "DEFAULT")
 
     updateCamera mainWin game
     render
@@ -129,9 +129,9 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
 useInputKeyboardD :: Common ->  Game -> Event -> Point -> State
 useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules d@(Dialogue str pos section options)) e p
   | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
-  | e `elem` take (length options)[one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
+  | e `elem` take (length options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
   | e `elem` [up k, cUp k, down k, cDown k] = State com game {dialogue = d {charpos =  newpos}} isInDialogue $ Just $ pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ drop (getNewStartDialogue str' y (getDir k e) x) str' ++ "\n" ++ showOptions options
-  | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin $"Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+  | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin $"Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
     str' = getStrPart str
@@ -140,14 +140,15 @@ useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules d@(
     basestate = State com game
 
 runChoiceDialogue :: Common -> Game -> Event -> Point -> State
-runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules d@(Dialogue str pos section options)) e p
+runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules' d@(Dialogue str pos section options)) e p
   | e == one k = run 1
   | e == two k = run 2
   | e == three k = run 3
   | e == four k = run 4
   | e == five k = run 5
   where
-    run x' =useInputKeyboardD com (game {dialogue = newDialogue (either (const "ERROR IN DIALOGUE") id $ get rules section (fst $ options !! (x'-1)) ) section}) (up k) p
+    actualop x' = fst $ options !! (x'-1)
+    run x' =useInputKeyboardD com (game {dialogue = newDialogue rules' (either (const "ERROR IN DIALOGUE") id $ get rules' section (actualop x') ) section, rules = either (const rules') id $ set rules' section "lastoption" (actualop x') }) (up k) p
 
 updateScreenSize :: Common -> Game -> Point -> Curses ()
 updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game@(Game lm _ rules _) y_x_width =  do
@@ -212,7 +213,7 @@ updateCamera win (Game (LevelMap map1 p ) (Beast pos _ _) rules _) = getScreenSi
 testAndSayTosay :: State -> Point -> State
 testAndSayTosay (State com@(Common _ _ msgWin _ _ k) game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _) rules _) status action) p' = case status of
   MainGame -> State com game status $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg msgWin (willDo' "tosay" "Would speak with") else cannot
-  InDialogue -> if canInteractWith lm newpos rules "dialogue" then useInputKeyboardD com (game {dialogue = newDialogue (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up k) p' else State com game MainGame cannot
+  InDialogue -> if canInteractWith lm newpos rules "dialogue" then useInputKeyboardD com (game {dialogue = newDialogue rules (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up k) p' else State com game MainGame cannot
   where
     action' = fromMaybe (return ()) action
     newpos = pos + dirToPoint dir
