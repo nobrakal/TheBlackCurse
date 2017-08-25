@@ -40,7 +40,7 @@ data State = State {
   todo :: Maybe (Curses ())
 }
 
-data Status = MainGame | InDialogue
+data Status = MainGame | InDialogue | Action -- Action is used when we have to determine th status
 
 main :: IO ()
 main = do
@@ -119,7 +119,7 @@ useInputKeyboardMG :: Common -> Game -> Event -> Point -> State
 useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_width
   | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC com game (getDir k e) y_x_width
   | e `elem` [up k, down k, left k, right k] = testAndMoveP com game (getDir k e) y_x_width
-  | e == action k = testAndSayTosay (basestate InDialogue Nothing) y_x_width
+  | e == action k = testAndDoSomething (basestate Action Nothing) y_x_width
   | e == help k = basestate InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
   | e == saveM k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ rules game)) >>  drawClearMsg msgWin "Saving..."
   | e == exit k = basestate MainGame Nothing
@@ -190,8 +190,8 @@ testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ ) s winsize = State com
 -- Test and run the player move
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
 testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b rules _ ) s winsize = if isOk
-  then testAndSayTosay (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
-  else testAndSayTosay (basestate Nothing) winsize
+  then testAndDoSomething (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
+  else testAndDoSomething (basestate Nothing) winsize
   where
     newpos = pos b + dirToPoint s
     isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
@@ -210,12 +210,15 @@ updateCamera win (Game (LevelMap map1 p ) b rules _) = getScreenSize >>= \x -> d
       else map1
 
 -- Test if can do something, and if possible actually do it
-testAndSayTosay :: State -> Point -> State
-testAndSayTosay (State com@(Common _ _ msgWin _ _ k) game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _ _) rules _) status action) p' = case status of
-  MainGame -> State com game status $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg msgWin (willDo' "tosay" "Would speak with") else cannot
-  InDialogue -> if canInteractWith lm newpos rules "dialogue" then useInputKeyboardD com (game {dialogue = newDialogue rules (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up k) p' else State com game MainGame cannot
+testAndDoSomething :: State -> Point -> State
+testAndDoSomething (State com game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _ _) rules _) status action) p' = case status of
+  MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else cannot
+  Action | canInteractWith lm newpos rules "dialogue" -> useInputKeyboardD com (game {dialogue = newDialogue rules (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) }) (up $ keyboard com) p'
+    | canInteractWith lm newpos rules "hp" -> basestate $ Just $ drawClearMsg (msgWin com) "Would hit when implemented"
+    | otherwise -> basestate cannot
   where
     action' = fromMaybe (return ()) action
     newpos = pos + dirToPoint dir
-    cannot = if isJust action then action else Just $ action' >> drawClearMsg msgWin "Cannot do anything"
+    cannot = if isJust action then action else Just $ action' >> drawClearMsg (msgWin com) "Cannot do anything"
     willDo' =  willDo rules map1 newpos
+    basestate = State com game MainGame
