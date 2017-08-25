@@ -1,19 +1,25 @@
-[GAME]
-cannotgothrough=Km+-|~I
-cannotseethrough=+-|I
-radius=10
-msgwinheight=7
-[I]
-tosay=Lorem ipsum
-dialogue=Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-[Karthur]
-tosay=Welcome stranger, can I have a word ?
-dialogue=My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogueyes Yes | dialogueno No
-dialogueyes = Thank you. Here is the story of the black plague...
-dialogueno=Too bad, come back later
-[mflames]
-tosay=Seems warm and comfy
 [*]
-tosay=It's dark here
+tosay: It's dark here
+
+[GAME]
+cannotgothrough: Km+-|~I
+cannotseethrough: +-|I
+msgwinheight: 7
+radius: 10
+
+[I]
+dialogue: Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+tosay: Lorem ipsum
+
+[Karthur]
+dialogue: My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogueyes Yes | dialogueno No
+dialogueno: Too bad, come back later
+dialogueyes: Thank you. Here is the story of the black plague...
+tosay: Welcome stranger, can I have a word ?
+
+[mflames]
+tosay: Seems warm and comfy
+
 [~]
-tosay=Black water, I wouldn't swim here
+tosay: Black water, I wouldn't swim here
+

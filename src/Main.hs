@@ -6,6 +6,7 @@ import Data.ConfigFile
 import Data.Maybe
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class
 
 import Space
 import LevelMap
@@ -115,12 +116,12 @@ useInputSwitchStatus c g e status p  = case status of
   InDialogue -> useInputKeyboardD c g e p
 
 useInputKeyboardMG :: Common -> Game -> Event -> Point -> State
-useInputKeyboardMG com@(Common _ mainWin msgWin mapPath _ k) game e y_x_width
+useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_width
   | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC com game (getDir k e) y_x_width
   | e `elem` [up k, down k, left k, right k] = testAndMoveP com game (getDir k e) y_x_width
   | e == action k = testAndSayTosay (basestate InDialogue Nothing) y_x_width
   | e == help k = basestate InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
-  | e == saveM k = basestate MainGame $ Just $ drawClearMsg msgWin "Will save when implemented "  -- Just $ writeFile mapPath (toStr $ levelMap $ m game)
+  | e == saveM k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ rules game)) >>  drawClearMsg msgWin "Saving..."
   | e == exit k = basestate MainGame Nothing
   | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
   where basestate = State com game
