@@ -73,9 +73,9 @@ willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
     cell = getCellAt map1 p'
 
 {- Radius things -}
-
+ -- TODO Shadow part
 getRadius :: Map -> ConfigParser -> Point -> Int -> Map
-getRadius map1 cf start radius_w = applyMask map1 emptyMap $ makeShadow' cf map1 start $ onlyExistingPoint map1 $ getRadiusFromPoint start radius_w
+getRadius map1 cf start radius_w = applyMask map1 emptyMap $ onlyExistingPoint map1 $ getRadiusFromPoint start radius_w
   where
     emptyMap = replicate (length map1) ((++ ["\n"]) (replicate (length $ head map1) " "))
 
