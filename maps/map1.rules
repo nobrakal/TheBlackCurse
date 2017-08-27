@@ -2,7 +2,7 @@
 tosay: It's dark here
 
 [GAME]
-cannotgothrough: Km+-|~IZ
+cannotgothrough: Km+-|~IZZ
 cannotseethrough: +-|I
 msgwinheight: 7
 radius: 10
@@ -18,12 +18,13 @@ dialogueyes: Thank you. Here is the story of the black plague...
 lastoption: dialogueyes
 tosay: Welcome stranger, can I have a word ?
 
+[Z]
+hp: 10
+tosay: Aaarrrggghhhhh
+
 [mflames]
 tosay: Seems warm and comfy
 
 [~]
 tosay: Black water, I wouldn't swim here
 
-[Z]
-tosay: Aaarrrggghhhhh
-hp: 10

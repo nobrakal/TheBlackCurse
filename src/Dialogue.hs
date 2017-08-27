@@ -20,9 +20,9 @@ data Dialogue = Dialogue {str :: String,
   options :: [(OptionSpec,String)]}
 
 newDialogue :: ConfigParser -> String -> SectionSpec -> Dialogue
-newDialogue cp str section = Dialogue (either (const "error in lastoption") id $ get cp section str') (return 0) section (getOptionsPart str')
+newDialogue cp str section = Dialogue (str') (return 0) section (getOptionsPart str')
   where
-    str' = if has_option cp section "lastoption" then last' else str
+    str' = if has_option cp section "lastoption" then either (const "error") id $ get cp section last' else str
     last' = either (const "") id $ get cp section "lastoption"
 
 getNewStartDialogue :: String -> Int -> Direction -> Point -> Int
