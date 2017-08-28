@@ -12,10 +12,12 @@ dialogue: Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusm
 tosay: Lorem ipsum
 
 [Karthur]
-dialogue: My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogueyes Yes | dialogueno No
+dialogue: My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogueyes Yes | dialogueno No | dialoguequit
+dialoguequit: You leaved me before I finished last time, please be more polite | dialogue Yes, sorry | dialoguequit
 dialogueno: Too bad, come back later
-dialogueyes: Thank you. Here is the story of the black plague...
-lastoption: dialogueyes
+dialogueyes: Thank you. Here is the story of the black plague... | wasdialogueyes
+wasdialogueyes: We already talked about that | wasdialogueyes
+
 tosay: Welcome stranger, can I have a word ?
 
 [Z]
@@ -27,4 +29,3 @@ tosay: Seems warm and comfy
 
 [~]
 tosay: Black water, I wouldn't swim here
-

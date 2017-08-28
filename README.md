@@ -72,6 +72,11 @@ To define a monster, you will have to specify a "hp" option. The combat will be 
 
 Options avaible are:
 * tosay: Displayed when the character go through or interract with the object
-* dialogue: Diplayed when the player interract with the objet. You can specify responses by adding at the end of the line | action1 Text Disp | action2 Text where action1 and action2 are option in the same section of the config file and "Text Disp" and "Text" are the texts displayed.
+* dialogue: Diplayed when the player interract with the objet. You can specify responses by adding at the end of the line
+
+> | action1 Text Disp | action2 Text | lastoption
+
+where action1 and action2 are option in the same section of the config file and "Text Disp" and "Text" are the texts displayed. lastoption is the parameter that will be used when the user attempt a new dialogue. By default his value is "dialogue".
+
 * lastoption: Last option used in the dialogue, it will be diplayed if the player attempt a new dialogue
 * hp: Health points of the object

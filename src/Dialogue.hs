@@ -4,7 +4,8 @@ module Dialogue(
   getStrPart,
   getOptionsPart,
   newDialogue,
-  showOptions
+  showOptions,
+  setOrUnsetLastoption
   )
 where
 
@@ -17,13 +18,18 @@ import Data.ConfigFile
 data Dialogue = Dialogue {str :: String,
   charpos :: Curses Int,
   section :: SectionSpec,
-  options :: [(OptionSpec,String)]}
+  options :: Maybe [(OptionSpec,String)],
+  -- Maybe the last item specified in the options list
+  lastoption :: Maybe OptionSpec}
 
-newDialogue :: ConfigParser -> String -> SectionSpec -> Dialogue
-newDialogue cp str section = Dialogue (str') (return 0) section (getOptionsPart str')
+-- Create a new dialogue with the specified ConfigParser, String and SectionSpec. If the Bool is set to True, it will check the lastoption, else no.
+newDialogue :: ConfigParser -> String -> SectionSpec -> Bool -> Dialogue
+newDialogue cp str section realynew = Dialogue str' (return 0) section (if null optionspart || null iOptionpart then Nothing else Just iOptionpart ) (if null optionspart || null (snd $last optionspart)  then Nothing else Just $ fst $ last optionspart)
   where
-    str' = if has_option cp section "lastoption" then either (const "error") id $ get cp section last' else str
+    str' = if has_option cp section "lastoption" && realynew then either (const "error") id $ get cp section last' else str
     last' = either (const "") id $ get cp section "lastoption"
+    optionspart = getOptionsPart str'
+    iOptionpart = init optionspart
 
 getNewStartDialogue :: String -> Int -> Direction -> Point -> Int
 getNewStartDialogue str start dir (Point _ x)
@@ -41,16 +47,17 @@ getStrPart str = case ind of
   where
     ind = elemIndex '|' str
 
-getOptionsPart :: String -> [(String,String)]
+getOptionsPart :: String -> [(OptionSpec,String)]
 getOptionsPart str = case ind of
-  Just s -> zip( map head options) (map (\x -> if length x > 1 then x !!1 else head x) options)
+  Just s -> zip (map head options) (map (\x -> if length x > 1 then concatMap (++" ") $ tail x else head x) options)
   Nothing -> []
   where
     ind = elemIndex '|' str
     options = map words $ explode (=='|') $ drop (fromJust ind) str
 
-showOptions :: [(String,String)] -> String
-showOptions s = showOptions' s 1
+showOptions :: Maybe [(String,String)] -> String
+showOptions (Just s) = showOptions' s 1
+showOptions Nothing = ""
 
 showOptions' :: [(String,String)] -> Int -> String
 showOptions' [] _ = ""
@@ -63,3 +70,6 @@ explode f xs
     | null z  = explode f (tail zs)
     | otherwise = z : explode f (tail zs)
         where (z, zs) = break f xs
+
+setOrUnsetLastoption :: ConfigParser -> SectionSpec -> Maybe OptionSpec -> ConfigParser
+setOrUnsetLastoption rules' section lastoption = either (const rules') id $ maybe (remove_option rules' section "lastoption") (set rules' section "lastoption") lastoption
