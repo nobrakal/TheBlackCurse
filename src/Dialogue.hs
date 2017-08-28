@@ -5,7 +5,8 @@ module Dialogue(
   getOptionsPart,
   newDialogue,
   showOptions,
-  setOrUnsetLastoption
+  setOrUnsetLastoption,
+  showDialogue
   )
 where
 
@@ -21,6 +22,11 @@ data Dialogue = Dialogue {str :: String,
   options :: Maybe [(OptionSpec,String)],
   -- Maybe the last item specified in the options list
   lastoption :: Maybe OptionSpec}
+
+showDialogue :: Dialogue -> Int -> Direction -> Point -> String
+showDialogue (Dialogue str _ _ options _) y dir p =  drop (getNewStartDialogue str' y dir p) str' ++ "\n" ++ showOptions options
+  where
+    str' = getStrPart str
 
 -- Create a new dialogue with the specified ConfigParser, String and SectionSpec. If the Bool is set to True, it will check the lastoption, else no.
 newDialogue :: ConfigParser -> String -> SectionSpec -> Bool -> Dialogue

@@ -40,7 +40,7 @@ data State = State {
   todo :: Maybe (Curses ())
 }
 
-data Status = MainGame | InDialogue | Action -- Action is used when we have to determine th status
+data Status = MainGame | InDialogue | Action -- Action is used when we have to determine the status
 
 main :: IO ()
 main = do
@@ -75,18 +75,12 @@ main = do
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
     let map1 = loadMap file (Point 0 0) --Init the map with screen size
-    let action = Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e
-    let keyboard = loadKeyboard $ merge defaultKeyboard configFile
-
-    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2
-
-    let common = Common stdscr mainWin msgWin mapPath rulesPath keyboard
-    let game = Game map1 player fileRules (newDialogue fileRules "" "DEFAULT" True)
+    let game = Game map1 (Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2) fileRules (newDialogue fileRules "" "DEFAULT" True)
 
     updateCamera mainWin game
     render
 
-    mainLoop (State common game MainGame action) -- Run mainLoop
+    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (loadKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $ either (const "Map not found") (const "Welcome") e)) -- Run mainLoop
 
 
 msgWinHeight :: ConfigParser -> Int
@@ -102,6 +96,7 @@ mainLoop (State common game status (Just todo) )= do
 
 mainLoop (State _ _ _ Nothing) = return ()
 
+-- Use the input
 useInput :: Common -> Game -> Status -> Point -> Maybe Event -> State
 useInput com game status y_x_width (Just e) = case e of
   (EventCharacter c) -> useInputSwitchStatus com game (EventCharacter c) status $ calculateMainWinSize (rules game) y_x_width
@@ -111,6 +106,7 @@ useInput com game status y_x_width (Just e) = case e of
   s@_ -> State com game MainGame $ Just $ drawClearMsg (msgWin com) (show s)  -- Any other input
 useInput com g status _ s = State com g MainGame $ Just $ drawClearMsg (msgWin com) (show s)  -- Any other input
 
+-- Switch between Dialogue and MainGame input usage
 useInputSwitchStatus :: Common -> Game -> Event -> Status -> Point -> State
 useInputSwitchStatus c g e status p  = case status of
   MainGame -> useInputKeyboardMG c g e p
@@ -131,14 +127,14 @@ useInputKeyboardD :: Common ->  Game -> Event -> Point -> State
 useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
   | isJust options && e `elem` take (length $ fromJust options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
-  | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue $ Just $ pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ drop (getNewStartDialogue str' y (getDir k e) x) str' ++ "\n" ++ showOptions options
-  | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin  (show options)-- $"Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+  | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue $ Just action
+  | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin $"Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
-    str' = getStrPart str
     msg = calculateMsgWinSize rules' p
     isInDialogue = if isNothing options && length str < x msg * y msg then MainGame else InDialogue
     basestate = State com game
+    action = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ showDialogue d y (getDir k e) p
 
 runChoiceDialogue :: Common -> Game -> Event -> Point -> State
 runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules' d@(Dialogue str pos section options lastoption)) e p
