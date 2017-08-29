@@ -8,6 +8,7 @@ import Data.List
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
+import qualified Text.Read as R
 
 import Space
 import LevelMap
@@ -77,7 +78,7 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
-    let map1 = loadMap file (Point 0 0) --Init the map with screen size
+    let map1 = loadMap file (either (const $ Point 0 0) ( fromMaybe (Point 0 0) . R.readMaybe) $ get fileRules "GAME" "currul") --Init the map with screen size
     let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") True "Player"
     let game = Game map1 player (findActivated map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
 
@@ -122,8 +123,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
   | e `elem` [up k, down k, left k, right k] = testAndMoveP com game (getDir k e) y_x_width
   | e == action k = testAndDoSomething (basestate Action Nothing) y_x_width
   | e == help k = basestate InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
-  -- TODO save currul
-  | e == saveM k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ rules game)) >>  drawClearMsg msgWin "Saving..."
+  | e == saveM k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate MainGame Nothing
   | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
   where basestate = State com game

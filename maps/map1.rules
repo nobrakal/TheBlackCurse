@@ -4,12 +4,9 @@ tosay: It's dark here
 [GAME]
 cannotgothrough: Km+-|~IZZ
 cannotseethrough: +-|I
+currul: Point {y = 12, x = 0}
 msgwinheight: 7
 radius: 10
-
-[PLAYER]
-hp: 10
-dammage: 3
 
 [I]
 dialogue: Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
@@ -23,12 +20,16 @@ dialogueyes: Thank you. Here is the story of the black plague... | wasdialogueye
 tosay: Welcome stranger, can I have a word ?
 wasdialogueyes: We already talked about that | END
 
+[PLAYER]
+dammage: 3
+hp: 10
+
 [Z]
 activated: true
-hp: 10
 dammage: 0
-tosay: Aaarrrggghhhhh
+hp: 10
 name: Zombi
+tosay: Aaarrrggghhhhh
 
 [mflames]
 tosay: Seems warm and comfy
