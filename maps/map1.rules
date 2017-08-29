@@ -16,7 +16,7 @@ dialogue: My name is Arthur. I am a kind of a druid here. I see a great power in
 dialoguequit: You leaved me before I finished last time, please be more polite | dialogue Yes, sorry | dialoguequit
 dialogueno: Too bad, come back later
 dialogueyes: Thank you. Here is the story of the black plague... | wasdialogueyes
-wasdialogueyes: We already talked about that | wasdialogueyes
+wasdialogueyes: We already talked about that | END
 
 tosay: Welcome stranger, can I have a word ?
 

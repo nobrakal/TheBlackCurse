@@ -6,7 +6,8 @@ module Dialogue(
   newDialogue,
   showOptions,
   setOrUnsetLastoption,
-  showDialogue
+  showDialogue,
+  isEnded
   )
 where
 
@@ -29,13 +30,21 @@ showDialogue (Dialogue str _ _ options _) y dir p =  drop (getNewStartDialogue s
     str' = getStrPart str
 
 -- Create a new dialogue with the specified ConfigParser, String and SectionSpec. If the Bool is set to True, it will check the lastoption, else no.
-newDialogue :: ConfigParser -> String -> SectionSpec -> Bool -> Dialogue
-newDialogue cp str section realynew = Dialogue str' (return 0) section (if null optionspart || null iOptionpart then Nothing else Just iOptionpart ) (if null optionspart || null (snd $last optionspart)  then Nothing else Just $ fst $ last optionspart)
+newDialogue :: ConfigParser -> OptionSpec -> SectionSpec -> Bool -> Dialogue
+newDialogue cp op section realynew = Dialogue str' (return 0) section (if null optionspart || null iOptionpart then Nothing else Just iOptionpart ) (if null optionspart || null (snd $last optionspart)  then Nothing else Just $ fst $ last optionspart)
   where
+    str = either (const "ERROR IN DIALGOUE") id $ get cp section op
     str' = if has_option cp section "lastoption" && realynew then either (const "error") id $ get cp section last' else str
     last' = either (const "") id $ get cp section "lastoption"
     optionspart = getOptionsPart str'
     iOptionpart = init optionspart
+
+isEnded :: ConfigParser -> SectionSpec -> Bool
+isEnded cp s
+  | lastop == "END" = True
+  | otherwise = False
+  where
+    lastop = either (const "") id $ get cp s "lastoption"
 
 getNewStartDialogue :: String -> Int -> Direction -> Point -> Int
 getNewStartDialogue str start dir (Point _ x)

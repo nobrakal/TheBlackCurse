@@ -144,7 +144,7 @@ runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules' d@(D
   | e == four k = run 4
   | e == five k = run 5
   where
-    run x' =useInputKeyboardD com (game {dialogue = newDialogue rules' (either (const "ERROR IN DIALOGUE") id $ get rules' section (fst $ fromJust options !! (x'-1)) ) section False,
+    run x' =useInputKeyboardD com (game {dialogue = newDialogue rules' (fst $ fromJust options !! (x'-1)) section False,
       rules = setOrUnsetLastoption rules' section lastoption }) (up k) p
 
 updateScreenSize :: Common -> Game -> Point -> Curses ()
@@ -208,9 +208,9 @@ updateCamera win (Game (LevelMap map1 p ) b rules _) = getScreenSize >>= \x -> d
 
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: State -> Point -> State
-testAndDoSomething (State com game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir _ _) rules _) status action) p' = case status of
+testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _) rules _) status action) p' = case status of
   MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else cannot
-  Action | canInteractWith lm newpos rules "dialogue" -> useInputKeyboardD com (game {dialogue = newDialogue rules (willDo' "dialogue" "Would speak with") (getCellAt map1 newpos) True }) (up $ keyboard com) p'
+  Action | canInteractWith lm newpos rules "dialogue" && not (isEnded rules section) -> useInputKeyboardD com (game {dialogue = newDialogue rules "dialogue" section True }) (up $ keyboard com) p'
     | canInteractWith lm newpos rules "hp" -> basestate $ Just $ drawClearMsg (msgWin com) "Would hit when implemented"
     | otherwise -> basestate cannot
   where
@@ -219,3 +219,4 @@ testAndDoSomething (State com game@(Game  lm@(LevelMap map1 _ ) p@(Beast pos dir
     cannot = if isJust action then action else Just $ action' >> drawClearMsg (msgWin com) "Cannot do anything"
     willDo' =  willDo rules map1 newpos
     basestate = State com game MainGame
+    section = getCellAt map1 newpos

@@ -31,6 +31,7 @@ On the KEYBOARD section, you can specify the following fileds:
 * cRight
 * action
 * load
+* save
 * help
 * quit
 
@@ -76,7 +77,7 @@ Options avaible are:
 
 > | action1 Text Disp | action2 Text | lastoption
 
-where action1 and action2 are option in the same section of the config file and "Text Disp" and "Text" are the texts displayed. lastoption is the parameter that will be used when the user attempt a new dialogue. By default his value is "dialogue".
+where action1 and action2 are option in the same section of the config file and "Text Disp" and "Text" are the texts displayed. lastoption is the parameter that will be used when the user attempt a new dialogue. By default his value is "dialogue". if set to END, the dialogue is definitly ended.
 
 * lastoption: Last option used in the dialogue, it will be diplayed if the player attempt a new dialogue
-* hp: Health points of the object
+* hp: Health points of the object. If an object has this attribute, and the dialogue is ended (lastoption set to END) or if there is no dialogue at all, the player can combat the object.
