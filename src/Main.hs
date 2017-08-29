@@ -76,7 +76,7 @@ main = do
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
     let map1 = loadMap file (Point 0 0) --Init the map with screen size
-    let game = Game map1 (Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2 True) [] fileRules (newDialogue fileRules "" "DEFAULT" True)
+    let game = Game map1 (Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2 True) (findActivated map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
 
     updateCamera mainWin game
     render
@@ -88,7 +88,7 @@ msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
 
 mainLoop :: State -> Curses ()
-mainLoop (State common game status (Just todo) )= do
+mainLoop (State common game status (Just todo))= do
   todo
   render
   inp <- getEvent (stdscr common) Nothing

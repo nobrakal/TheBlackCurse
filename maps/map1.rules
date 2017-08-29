@@ -22,6 +22,7 @@ tosay: Welcome stranger, can I have a word ?
 
 [Z]
 hp: 10
+activated: True
 tosay: Aaarrrggghhhhh
 
 [mflames]

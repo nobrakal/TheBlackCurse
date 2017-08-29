@@ -7,6 +7,7 @@ module LevelMap (
   getCurrentDisplay,
   getCellAt,
   getCharPos,
+  getStrPos,
   canInteractWith,
   canGoTrough,
   willDo,
@@ -15,6 +16,7 @@ where
 
 import Space
 import Data.ConfigFile
+import Data.List
 
 type Map = [[String]]
 
@@ -49,11 +51,14 @@ getCellAt tab (Point y x) = (tab !! y) !! x
 
 -- Find the "@" on the map
 getCharPos :: Map -> Char -> Int -> Int-> Point
-getCharPos tab@((x:xs):xs') c y x'
-  | head ( head $ head tab )== c = Point y x'
+getCharPos tab c = getStrPos tab [c]
+
+getStrPos :: Map -> String -> Int -> Int-> Point
+getStrPos tab@((x:xs):xs') s y x'
+  | isPrefixOf s $ head (head tab) = Point y x'
   | null xs' && null xs = Point (-1) (-1)
-  | null xs = getCharPos xs' c (y+1) 0
-  | otherwise = getCharPos (xs:xs') c y (x'+1)
+  | null xs = getStrPos xs' s (y+1) 0
+  | otherwise = getStrPos (xs:xs') s y (x'+1)
 
 {- Interract things -}
 
