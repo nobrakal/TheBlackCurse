@@ -47,10 +47,10 @@ Note first that only the first character of a string is diplayed. The rest is us
 Here is the signification of the different symbols:
 
 * . is a blank cell
-* * is a tree
+* \* is a tree
 * | is a vertical wall
-* + is an angle wall
-* - is an horizontal wall
+* \+ is an angle wall
+* \- is an horizontal wall
 * m is a fire
 * K is a man
 * ~ is water
