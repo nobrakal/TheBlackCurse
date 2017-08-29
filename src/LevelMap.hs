@@ -11,7 +11,8 @@ module LevelMap (
   canInteractWith,
   canGoTrough,
   willDo,
-  getRadius)
+  getRadius,
+  replaceByStr)
 where
 
 import Space
