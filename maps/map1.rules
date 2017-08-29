@@ -24,7 +24,7 @@ wasdialogueyes: We already talked about that | END
 dammage: 3
 hp: 10
 
-[Z]
+[Z.]
 activated: true
 dammage: 0
 hp: 10

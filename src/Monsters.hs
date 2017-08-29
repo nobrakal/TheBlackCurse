@@ -30,7 +30,7 @@ findActivatedInConfigParser cp (x:xs) = if either (const False) id $ get cp x "a
 -- TODO: replace by char
 removeDead :: Map -> Monsters -> Map
 removeDead m [] = m
-removeDead m (Beast (Point y x) _ _ _ _ _:xs) = replaceByStr (removeDead m xs) y x "."
+removeDead m (Beast p@(Point y x) _ _ _ _ _:xs) = replaceByStr (removeDead m xs) y x [last $ getCellAt m p]
 
 getBeast :: Monsters -> Point -> Maybe Beast
 getBeast [] _ = Nothing

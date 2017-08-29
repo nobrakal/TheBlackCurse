@@ -225,7 +225,6 @@ testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir 
     basestate = State com game MainGame
     section = getCellAt map1 newpos
 
--- TODO get monster name
 hitMonster :: Common -> Game -> Point -> State
 hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) monsters' rules _) m_pos = State com newgame MainGame $ Just $ updateCamera (mainWin com) newgame >> drawClearMsg (msgWin com) msg
   where
