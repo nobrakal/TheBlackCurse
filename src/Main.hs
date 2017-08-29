@@ -29,6 +29,7 @@ data Common = Common {
 data Game = Game {
   m :: LevelMap,
   player :: Beast,
+  monsters :: [Beast],
   rules :: ConfigParser,
   dialogue :: Dialogue
 }
@@ -75,7 +76,7 @@ main = do
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
     let map1 = loadMap file (Point 0 0) --Init the map with screen size
-    let game = Game map1 (Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2) fileRules (newDialogue fileRules "" "DEFAULT" True)
+    let game = Game map1 (Beast (getCharPos (levelMap map1) '@' 0 0) DOWN 10 2 True) [] fileRules (newDialogue fileRules "" "DEFAULT" True)
 
     updateCamera mainWin game
     render
@@ -123,8 +124,8 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
   | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
   where basestate = State com game
 
-useInputKeyboardD :: Common ->  Game -> Event -> Point -> State
-useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules' d@(Dialogue str pos section options lastoption)) e p
+useInputKeyboardD :: Common -> Game -> Event -> Point -> State
+useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
   | isJust options && e `elem` take (length $ fromJust options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
   | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue $ Just action
@@ -137,7 +138,7 @@ useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _  _ rules' d@
     action = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ showDialogue d y (getDir k e) p
 
 runChoiceDialogue :: Common -> Game -> Event -> Point -> State
-runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules' d@(Dialogue str pos section options lastoption)) e p
+runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == one k = run 1
   | e == two k = run 2
   | e == three k = run 3
@@ -148,14 +149,14 @@ runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ rules' d@(D
       rules = setOrUnsetLastoption rules' section lastoption }) (up k) p
 
 updateScreenSize :: Common -> Game -> Point -> Curses ()
-updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game@(Game lm _ rules _) y_x_width =  do
+updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game y_x_width =  do
   updateWindow mainWin clear
   updateWindow msgWin clear
-  let msdim = calculateMsgWinSize rules y_x_width
-  let mwdim = calculateMainWinSize rules y_x_width
+  let msdim = calculateMsgWinSize (rules game) y_x_width
+  let mwdim = calculateMainWinSize (rules game) y_x_width
   updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
   updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
-  updateBorders rules stdscr y_x_width
+  updateBorders (rules game) stdscr y_x_width
   updateCamera mainWin game
   drawClearMsg msgWin "Resized"
 
@@ -175,18 +176,17 @@ updateBorders c stdscr y_x_width = do
 
 -- Test if we can move the camera then does it else say it cannot
 testAndMoveC :: Common -> Game -> Direction -> Point -> State
-testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ ) s winsize = State com game {m = lm {currul = posOkUl}} MainGame action
+testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ _ ) s winsize = State com game {m = lm {currul = if isOk then newul else currul}} MainGame action
   where
     newul@(Point ny nx) = currul + dirToPoint s
     isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + Point (-1) (-1))
-    posOkUl = if isOk then newul else currul
     action = if isOk
       then Just $ updateCamera (mainWin com) (game {m = lm {currul = newul}}) >> drawClearMsg (msgWin com) "Camera moved"
       else Just $ drawClearMsg (msgWin com) "Could not move the camera"
 
 -- Test and run the player move
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
-testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b rules _ ) s winsize = if isOk
+testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b _ rules _ ) s winsize = if isOk
   then testAndDoSomething (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
   else testAndDoSomething (basestate Nothing) winsize
   where
@@ -199,7 +199,7 @@ testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap ma
 
 -- Move the camera (do not do any test)
 updateCamera :: Window -> Game -> Curses()
-updateCamera win (Game (LevelMap map1 p ) b rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
+updateCamera win (Game (LevelMap map1 p ) b _ rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
   where
     radius = either (const 0) read $ get rules "GAME" "radius"
     actualmap = if 0 < radius
@@ -208,7 +208,7 @@ updateCamera win (Game (LevelMap map1 p ) b rules _) = getScreenSize >>= \x -> d
 
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: State -> Point -> State
-testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _) rules _) status action) p' = case status of
+testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _ _) _ rules _) status action) p' = case status of
   MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else cannot
   Action | canInteractWith lm newpos rules "dialogue" && not (isEnded rules section) -> useInputKeyboardD com (game {dialogue = newDialogue rules "dialogue" section True }) (up $ keyboard com) p'
     | canInteractWith lm newpos rules "hp" -> basestate $ Just $ drawClearMsg (msgWin com) "Would hit when implemented"

@@ -11,15 +11,9 @@ import LevelMap
 data Beast = Beast {pos :: Point,
   look :: Direction,
   hp :: Int,
-  dammage :: Int
+  dammage :: Int,
+  activated :: Bool
 }
-
--- WORK ONLY if length tab[y][x] >1
-{- invertAtIndex :: Int -> Int -> Map -> Map
-invertAtIndex y x tab=
-  let (posy, posy',posx,posx') = truncateAt y x tab
-      oldstr = (tab !! y) !! x
-  in posy ++ [posx ++ [([head $ tail oldstr] ++ [head oldstr]) ++ tail (tail oldstr)] ++ posx'] ++ posy' -}
 
 removeFirstCharAt :: Int -> Int -> Map -> Map
 removeFirstCharAt y x tab=
