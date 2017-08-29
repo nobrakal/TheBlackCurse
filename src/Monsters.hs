@@ -19,7 +19,7 @@ findActivated (LevelMap lm _) cp = findActivated' lm cp (findActivatedInConfigPa
 
 findActivated' :: Map -> ConfigParser -> [SectionSpec] -> Monsters
 findActivated' _ _ [] = []
-findActivated' lm cp (x:xs) = Beast (getStrPos lm x 0 0) DOWN (either (const 0) id $ get cp x "hp") (either (const 0) id $ get cp x "dammage") True : findActivated' lm cp xs
+findActivated' lm cp (x:xs) = Beast (getStrPos lm x 0 0) DOWN (either (const 0) id $ get cp x "hp") (either (const 0) id $ get cp x "dammage") True (either (const "no name") id $ get cp x "name") : findActivated' lm cp xs
 
 findActivatedInConfigParser :: ConfigParser -> [SectionSpec]-> [SectionSpec]
 findActivatedInConfigParser _ [] = []
@@ -30,7 +30,7 @@ findActivatedInConfigParser cp (x:xs) = if either (const False) id $ get cp x "a
 -- TODO: replace by char
 removeDead :: Map -> Monsters -> Map
 removeDead m [] = m
-removeDead m (Beast (Point y x) _ _ _ _:xs) = replaceByStr (removeDead m xs) y x "."
+removeDead m (Beast (Point y x) _ _ _ _ _:xs) = replaceByStr (removeDead m xs) y x "."
 
 getBeast :: Monsters -> Point -> Maybe Beast
 getBeast [] _ = Nothing

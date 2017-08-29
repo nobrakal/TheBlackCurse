@@ -28,6 +28,7 @@ activated: true
 hp: 10
 dammage: 0
 tosay: Aaarrrggghhhhh
+name: Zombi
 
 [mflames]
 tosay: Seems warm and comfy

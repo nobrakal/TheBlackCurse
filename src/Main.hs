@@ -78,13 +78,13 @@ main = do
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
     let map1 = loadMap file (Point 0 0) --Init the map with screen size
-    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") True
+    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") True "Player"
     let game = Game map1 player (findActivated map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
 
     updateCamera mainWin game
     render
 
-    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (loadKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $ show (findActivatedInConfigParser fileRules $ sections fileRules) {- either (const "Map not found") (const "Welcome") e -})) -- Run mainLoop
+    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (loadKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $  either (const "Map not found") (const "Welcome") e )) -- Run mainLoop
 
 
 msgWinHeight :: ConfigParser -> Int
@@ -212,7 +212,7 @@ updateCamera win (Game (LevelMap map1 p ) b _ rules _) = getScreenSize >>= \x ->
 
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: State -> Point -> State
-testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _ _) _ rules _) status action) p' = case status of
+testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _ _ _) _ rules _) status action) p' = case status of
   MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else cannot
   Action | canInteractWith lm newpos rules "dialogue" && not (isEnded rules section) -> useInputKeyboardD com (game {dialogue = newDialogue rules "dialogue" section True }) (up $ keyboard com) p'
     | canInteractWith lm newpos rules "hp" -> hitMonster com game newpos
@@ -225,12 +225,15 @@ testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir 
     basestate = State com game MainGame
     section = getCellAt map1 newpos
 
--- TODO print message when monster is dead
+-- TODO get monster name
 hitMonster :: Common -> Game -> Point -> State
-hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _) monsters' rules _) m_pos = State com newgame MainGame $ Just $ updateCamera (mainWin com) newgame >> drawClearMsg (msgWin com) (show newmonster)
+hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) monsters' rules _) m_pos = State com newgame MainGame $ Just $ updateCamera (mainWin com) newgame >> drawClearMsg (msgWin com) msg
   where
     actual_monster = getBeast monsters' m_pos
     newmonster = maybe Nothing (\x -> Just x {hp= hp x - dammage}) actual_monster
+    name' = maybe "noname" name actual_monster
+    isDead x = hp x <= 0
     newmonsters =  maybe monsters' (\x -> fromJust newmonster : delete x monsters') actual_monster
-    newmap = maybe map1 (\x -> if hp x <= 0 then removeDead map1 [x] else map1) newmonster
+    newmap = maybe map1 (\x -> if isDead x then removeDead map1 [x] else map1) newmonster
+    msg = maybe "error" (\x -> if isDead x then name' ++ " is dead" else name' ++ " was hit") newmonster
     newgame = game { m = lm {levelMap = newmap}, monsters = newmonsters }

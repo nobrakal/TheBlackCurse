@@ -81,3 +81,4 @@ where action1 and action2 are option in the same section of the config file and 
 
 * lastoption: Last option used in the dialogue, it will be diplayed if the player attempt a new dialogue
 * hp: Health points of the object. If an object has this attribute, and the dialogue is ended (lastoption set to END) or if there is no dialogue at all, the player can combat the object. MONSTERS MUST HAVE DIFFERENT IDs
+* name: name of the object
