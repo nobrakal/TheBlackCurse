@@ -44,7 +44,7 @@ data State = State {
   todo :: Maybe (Curses ())
 }
 
-data Status = MainGame | InDialogue | Action -- Action is used when we have to determine the status
+data Status = MainGame | InDialogue | Dead | Action deriving (Eq) -- Action is used when we have to determine the status
 
 main :: IO ()
 main = do
@@ -92,12 +92,16 @@ msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
 
 mainLoop :: State -> Curses ()
-mainLoop (State common game status (Just todo))= do
-  todo
+mainLoop (State common' game' status (Just todo'))= do
+  let (newplayer, bobo) = todoMonsters common' game' (monsters game') 0
+  todo' >> when (status == MainGame && bobo > 0) (drawClearMsg (msgWin common') $ "You were hit, you have now " ++ show (hp (player game')) ++ " hp" )
+  when (isDead && status /= Dead) (drawClearMsg (msgWin common') "You are dead")
   render
-  inp <- getEvent (stdscr common) Nothing
+  inp <- getEvent (stdscr common') Nothing
   y_x_width <- getScreenSize
-  mainLoop (useInput common game status y_x_width inp)
+  mainLoop (useInput common' (game' {player= if status == MainGame then newplayer else player game'}) (if isDead then Dead else status) y_x_width inp)
+  where
+    isDead = hp (player game') <= 0
 
 mainLoop (State _ _ _ Nothing) = return ()
 
@@ -116,6 +120,7 @@ useInputSwitchStatus :: Common -> Game -> Event -> Status -> Point -> State
 useInputSwitchStatus c g e status p  = case status of
   MainGame -> useInputKeyboardMG c g e p
   InDialogue -> useInputKeyboardD c g e p
+  Dead -> useInputKeyboardDead c g e p
 
 useInputKeyboardMG :: Common -> Game -> Event -> Point -> State
 useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_width
@@ -129,7 +134,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
   where basestate = State com game
 
 useInputKeyboardD :: Common -> Game -> Event -> Point -> State
-useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
+useInputKeyboardD com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
   | isJust options && e `elem` take (length $ fromJust options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
   | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue $ Just action
@@ -140,6 +145,13 @@ useInputKeyboardD  com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d
     isInDialogue = if isNothing options && length str < x msg * y msg then MainGame else InDialogue
     basestate = State com game
     action = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ showDialogue d y (getDir k e) p
+
+useInputKeyboardDead :: Common -> Game -> Event -> Point -> State
+useInputKeyboardDead com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
+  | e == exit k = basestate Nothing
+  | otherwise = basestate $ Just $ drawClearMsg msgWin "You can only quit for now"
+  where
+    basestate = State com game Dead
 
 runChoiceDialogue :: Common -> Game -> Event -> Point -> State
 runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
@@ -236,3 +248,12 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
     newmap = maybe map1 (\x -> if isDead x then removeDead map1 [x] else map1) newmonster
     msg = maybe "error" (\x -> if isDead x then name' ++ " is dead" else name' ++ " was hit") newmonster
     newgame = game { m = lm {levelMap = newmap}, monsters = newmonsters }
+
+-- Return the player after it was hit, and the number of hit
+todoMonsters :: Common -> Game -> Monsters -> Int -> (Beast, Int)
+todoMonsters _ g [] b = (player g, b)
+todoMonsters com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ rules _) (x:xs) b = todoMonsters com newgame xs $ b + bobo
+  where
+    isOk = isNear pos' $ pos x
+    bobo = if isOk then 1 else 0
+    newgame = game {player = if isOk then p {hp = hp' - dammage x} else p}

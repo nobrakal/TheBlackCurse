@@ -5,7 +5,8 @@ module Space
   pointToDir,
   dist,
   getRadiusFromPoint,
-  getListOfPoint
+  getListOfPoint,
+  isNear
   ) where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show, Eq, Read) -- To represent a point on the map
@@ -54,3 +55,10 @@ getRadiusFromPoint' start radius_w (x:xs)
   |otherwise = todo
   where
     todo = getRadiusFromPoint' start radius_w xs
+
+-- Test if the first point is near the second one (at his top, bottom, left or right)
+isNear :: Point -> Point -> Bool
+isNear (Point y1 x1) (Point y2 x2)
+  | y1 == y2 && (abs (x1 - x2) == 1) = True
+  | x1 == x2 && (abs (y1 - y2) == 1) = True
+  | otherwise = False
