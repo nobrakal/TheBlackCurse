@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 import UI.NCurses
 import System.Exit
 import System.Environment
@@ -9,6 +11,8 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import qualified Text.Read as R
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
 
 import Space
 import LevelMap
@@ -20,6 +24,8 @@ import Dialogue
 import GameTypes
 
 -- NOTE: Curses is a wrapper for IO
+
+$(buildKeyboard')
 
 main :: IO ()
 main = do
@@ -60,8 +66,7 @@ main = do
     updateCamera mainWin game
     render
 
-    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (loadKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $  either (const "Map not found") (const "Welcome") e )) -- Run mainLoop
-
+    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $  either (const "Map not found") (const "Welcome") e )) -- Run mainLoop
 
 msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
@@ -145,8 +150,8 @@ updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game y_x_width =  do
   updateWindow msgWin clear
   let msdim = calculateMsgWinSize (rules game) y_x_width
   let mwdim = calculateMainWinSize (rules game) y_x_width
-  updateWindow msgWin $ resizeWindow (toInteger $y msdim) (toInteger $x msdim)
-  updateWindow mainWin $ resizeWindow (toInteger $y mwdim) (toInteger $x mwdim)
+  updateWindow msgWin $ resizeWindow (toInteger $ y msdim) (toInteger $ x msdim)
+  updateWindow mainWin $ resizeWindow (toInteger $ y mwdim) (toInteger $ x mwdim)
   updateBorders (rules game) stdscr y_x_width
   updateCamera mainWin game
   drawClearMsg msgWin "Resized"
