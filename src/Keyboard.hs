@@ -41,27 +41,10 @@ data Keyboard = Kbd {
 } deriving (Show)
 
 defaultKeyboard :: ConfigParser --default kbd
-defaultKeyboard = either (return emptyCP) id $ do
-  let cp = emptyCP
-  cp <- add_section cp "KEYBOARD"
-  cp <- set cp "KEYBOARD" "up" "z"
-  cp <- set cp "KEYBOARD" "down" "s"
-  cp <- set cp "KEYBOARD" "left" "q"
-  cp <- set cp "KEYBOARD" "right" "d"
-  cp <- set cp "KEYBOARD" "cUp" "KeyUpArrow"
-  cp <- set cp "KEYBOARD" "cDown" "KeyDownArrow"
-  cp <- set cp "KEYBOARD" "cLeft" "KeyLeftArrow"
-  cp <- set cp "KEYBOARD" "cRight" "KeyRightArrow"
-  cp <- set cp "KEYBOARD" "action" "e"
-  cp <- set cp "KEYBOARD" "load" "l"
-  cp <- set cp "KEYBOARD" "save" "m"
-  cp <- set cp "KEYBOARD" "exit" "ESC"
-  cp <- set cp "KEYBOARD" "help" "h"
-  cp <- set cp "KEYBOARD" "one" "1"
-  cp <- set cp "KEYBOARD" "two" "2"
-  cp <- set cp "KEYBOARD" "three" "3"
-  cp <- set cp "KEYBOARD" "four" "4"
-  set cp "KEYBOARD" "five" "5"
+defaultKeyboard = foldl (\x (y1,y2)-> either (const emptyCP) id $ set x "KEYBOARD" y1 y2) cp defaults
+  where
+    cp = either (const emptyCP) id $ add_section emptyCP "KEYBOARD"
+    defaults = [("up","z" ),("down","s"),("left","q"),("right","d")  ,("cUp","KeyUpArrow"), ("cDown", "KeyDownArrow"),("cLeft", "KeyLeftArrow"),("cRight", "KeyRightArrow"),("action", "e"),("load", "l"),("save", "m"),("exit", "ESC"),("help", "h"),("one", "1"),("two", "2"),("three", "3"),("four", "4"),("five", "5")]
 
 -- Produce a function withe name that build a keyboard where evry record is set by func. Func will receive record names
 buildKeyboard' :: String -> (Exp -> [String] -> [Q Exp]) -> Q [Dec]
