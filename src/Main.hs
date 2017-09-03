@@ -25,7 +25,7 @@ import GameTypes
 
 -- NOTE: Curses is a wrapper for IO
 
-$(buildKeyboard')
+$(buildKeyboard' "buildKeyboard" getEvents)
 
 main :: IO ()
 main = do
@@ -108,7 +108,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
   | e `elem` [up k, down k, left k, right k] = testAndMoveP com game (getDir k e) y_x_width
   | e == action k = testAndDoSomething (basestate Action Nothing) y_x_width
   | e == help k = basestate InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
-  | e == saveM k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
+  | e == save k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate MainGame Nothing
   | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
   where basestate = State com game

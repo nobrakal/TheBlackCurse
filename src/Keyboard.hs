@@ -3,8 +3,8 @@
 module Keyboard
     (Keyboard (..),
     defaultKeyboard,
-    loadKeyboard,
     buildKeyboard',
+    getEvents,
     getC,
     getDir
     )
@@ -29,8 +29,8 @@ data Keyboard = Kbd {
   cLeft :: Event,
   cRight :: Event,
   action :: Event,
-  loadM :: Event,
-  saveM :: Event,
+  load :: Event,
+  save :: Event,
   exit :: Event,
   help :: Event,
   one :: Event,
@@ -55,7 +55,7 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "action" "e"
   cp <- set cp "KEYBOARD" "load" "l"
   cp <- set cp "KEYBOARD" "save" "m"
-  cp <- set cp "KEYBOARD" "quit" "ESC"
+  cp <- set cp "KEYBOARD" "exit" "ESC"
   cp <- set cp "KEYBOARD" "help" "h"
   cp <- set cp "KEYBOARD" "one" "1"
   cp <- set cp "KEYBOARD" "two" "2"
@@ -63,49 +63,28 @@ defaultKeyboard = either (return emptyCP) id $ do
   cp <- set cp "KEYBOARD" "four" "4"
   set cp "KEYBOARD" "five" "5"
 
-loadKeyboard :: ConfigParser -> Keyboard
-loadKeyboard c = Kbd
-  (get "up")
-  (get "down")
-  (get "left")
-  (get "right")
-  (get "cUp")
-  (get "cDown")
-  (get "cLeft")
-  (get "cRight")
-  (get "action")
-  (get "load")
-  (get "save")
-  (get "quit")
-  (get "help")
-  (get "one")
-  (get "two")
-  (get "three")
-  (get "four")
-  (get "five")
-  where
-    get = getC c "KEYBOARD"
-
-buildKeyboard' :: Q [Dec]
-buildKeyboard' = do
+-- Produce a function withe name that build a keyboard where evry record is set by func. Func will receive record names
+buildKeyboard' :: String -> (Exp -> [String] -> [Q Exp]) -> Q [Dec]
+buildKeyboard' name func = do
   cp <- newName "cp"
+  fnName <- newName name
   let kbd =  mkName "Kbd"
   ncp <- varE cp
   TyConI (DataD _ _ _ _ [RecC _ fields] _) <- reify ''Keyboard
   let names = map (\(name,_,_) -> name) fields
-  let fnName = mkName "buildKeyboard"
   let varPat = [varP cp]
-  evs <- sequenceQ $ getEvents ncp $ map (drop 9 . show) names
+  evs <- sequenceQ $ func ncp $ map (drop 9 . show) names --TODO: Better than drop
   let fexp = zipWith (curry  return) names evs
   let final = recConE kbd fexp
-  sequenceQ $ [sigD fnName (appT (appT arrowT $ conT ''ConfigParser) (conT ''Keyboard)),funD fnName [clause varPat (normalB final) []]]
+  sequenceQ [sigD fnName (appT (appT arrowT $ conT ''ConfigParser) (conT ''Keyboard)),funD fnName [clause varPat (normalB final) []]]
 
+-- Take a ConfigParser and build with it a keyboard
 getEvents :: Exp -> [String] -> [Q Exp]
 getEvents _ [] = []
 getEvents cp (x:xs) = [| getC $(return cp) "KEYBOARD" x |] : getEvents cp xs
 
 getC :: ConfigParser -> String -> String -> Event
-getC c section str = either (return $ EventCharacter 'n') getE $ get c section str
+getC c section str = either (return $ EventUnknown 0) getE $ get c section str
 
 getE :: String -> Event
 getE s
