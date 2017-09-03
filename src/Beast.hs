@@ -12,7 +12,7 @@ data Beast = Beast {pos :: Point,
   look :: Direction,
   hp :: Int,
   dammage :: Int,
-  activated :: Bool,
+  activated :: Int, -- radius
   name :: String
 } deriving (Show,Eq)
 

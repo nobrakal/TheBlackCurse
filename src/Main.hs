@@ -32,7 +32,7 @@ main = do
   let rulesPath = if 2<=length args then head $ tail args else "./maps/map1.rules"
   let mapPath = if 1<=length args then head args else "./maps/map1.txt"
 
-  fileRules <- loadF rulesPath  
+  fileRules <- loadF rulesPath
   configFile <- if length args >= 3 then loadC (args !! 2) else return emptyCP
   (b, map1) <- loadM mapPath fileRules
 
@@ -50,8 +50,9 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
-    let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") True "Player"
-    let game = Game map1 player (findActivated map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
+    let charpos = getCharPos (levelMap map1) '@' 0 0
+    let player = Beast charpos DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") 0 "Player"
+    let game = Game map1 player (findMonsters map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
 
     updateCamera mainWin game
     render
@@ -63,15 +64,14 @@ msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
 
 mainLoop :: State -> Curses ()
 mainLoop (State common' game' status (Just todo'))= do
-  let (newplayer, bobo) = todoMonsters common' game' (monsters game') 0
-  todo' >> when (status == MainGame && bobo > 0) (drawClearMsg (msgWin common') $ "You were hit, you have now " ++ show (hp (player game')) ++ " hp" )
-  when (isDead && status /= Dead) (drawClearMsg (msgWin common') "You are dead")
+  todo'
+  --drawClearMsg (msgWin common') $ show status
   render
   inp <- getEvent (stdscr common') Nothing
   y_x_width <- getScreenSize
-  mainLoop (useInput common' (game' {player= if status == MainGame then newplayer else player game'}) (if isDead then Dead else status) y_x_width inp)
-  where
-    isDead = hp (player game') <= 0
+  let used = useInput common' game' status y_x_width inp
+  mainLoop $ if status == MainGame then todoMonsters used else used
+
 
 mainLoop (State _ _ _ Nothing) = return ()
 
@@ -220,9 +220,19 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
     newgame = game { m = lm {levelMap = newmap}, monsters = newmonsters }
 
 -- Return the player after it was hit, and the number of hit
-todoMonsters :: Common -> Game -> Monsters -> Int -> (Beast, Int)
-todoMonsters _ g [] b = (player g, b)
-todoMonsters com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ rules _) (x:xs) b = todoMonsters com newgame xs $ b + bobo
+todoMonsters :: State -> State
+todoMonsters s@(State _ _ _ Nothing) = s
+
+todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status (Just todo')) = State com (game' {player = newplayer}) newstatus (Just newtodo)
+  where
+    (newplayer,bobo) = todoMonsters' com game' (findActivated pos' rules' monsters') False
+    newtodo = todo' >> when bobo (drawClearMsg (msgWin com) $ "You were hit, you have now " ++ show (hp newplayer) ++ " hp" ) >> when isDead (drawClearMsg (msgWin  com) "You are dead" )
+    isDead = hp newplayer <= 0
+    newstatus = if isDead then Dead else MainGame
+
+todoMonsters' :: Common -> Game -> Monsters -> Bool -> (Beast, Bool)
+todoMonsters' _ g [] b = (player g, b)
+todoMonsters' com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ rules _) (x:xs) b = todoMonsters' com newgame xs $ isOk || b
   where
     isOk = isNear pos' $ pos x
     bobo = if isOk then 1 else 0

@@ -39,4 +39,4 @@ data State = State {
   todo :: Maybe (Curses ())
 }
 
-data Status = MainGame | InDialogue | Dead | Action deriving (Eq) -- Action is used when we have to determine the status
+data Status = MainGame | InDialogue | Dead | Action deriving (Show, Eq) -- Action is used when we have to determine the status

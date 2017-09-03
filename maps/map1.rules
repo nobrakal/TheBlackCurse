@@ -25,7 +25,7 @@ dammage: 3
 hp: 10
 
 [Z.]
-activated: true
+activated: 3
 dammage: 2
 hp: 10
 name: Zombi
