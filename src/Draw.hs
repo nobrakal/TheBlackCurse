@@ -30,10 +30,9 @@ appendMsg win str = updateWindow win $ windowSize>>= \arg -> drawMsg (Point (fro
 drawMsg :: Point -> String -> Update ()
 drawMsg y_x_width str = do
   let winW = y y_x_width * x y_x_width
-  if length str < winW
-     then drawString (init str)
+  if length str <= winW
+     then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1
      else drawString $ take (winW-1) str
-  if length str == winW then drawLineH (Just $ Glyph (last str) []) 1 else drawString [last str]
 
 -- Draw a tab of String
 drawTab :: Window -> Point -> [[String]] -> Curses ()

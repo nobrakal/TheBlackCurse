@@ -101,7 +101,8 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
   | e == save k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate MainGame Nothing
   | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
-  where basestate = State com game
+  where
+    basestate = State com game
 
 useInputKeyboardD :: Common -> Game -> Event -> Point -> State
 useInputKeyboardD com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
@@ -233,7 +234,7 @@ todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ 
       >> when bobo (appendMsg (msgWin com) $ "\nYou were hit, you have now " ++ show (hp newplayer) ++ " hp" )
       >> when isDead (drawClearMsg (msgWin com) "You are dead" )
     isDead = hp newplayer <= 0
-    newstatus = if isDead then Dead else MainGame
+    newstatus = if isDead then Dead else status
 
 todoMonsters' :: Common -> Game -> Monsters -> Bool -> (Beast, Bool)
 todoMonsters' _ g [] b = (player g, b)

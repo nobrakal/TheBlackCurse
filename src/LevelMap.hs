@@ -31,7 +31,7 @@ loadMap file currul = do
   LevelMap file_map currul
 
 toStr :: Map -> String
-toStr = concatMap $ concatMap (++" ")
+toStr x= unlines $ map unwords $ map init x
 
 getmaxLength :: [[a]] -> Int
 getmaxLength = foldr (max . length) 0

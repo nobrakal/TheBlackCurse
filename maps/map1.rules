@@ -4,7 +4,7 @@ tosay: It's dark here
 [GAME]
 cannotgothrough: Km+-|~IZZ
 cannotseethrough: +-|I
-currul: Point {y = 12, x = 0}
+currul: Point {y = 27, x = 0}
 msgwinheight: 7
 radius: 10
 
@@ -36,3 +36,4 @@ tosay: Seems warm and comfy
 
 [~]
 tosay: Black water, I wouldn't swim here
+
