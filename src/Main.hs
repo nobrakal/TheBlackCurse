@@ -3,14 +3,11 @@
 import UI.NCurses
 import System.Exit
 import System.Environment
-import System.IO.Error
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad (when)
 import Data.ConfigFile
 import Data.Maybe
 import Data.List
-import Control.Exception
-import Control.Monad
-import Control.Monad.IO.Class
-import qualified Text.Read as R
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
@@ -22,6 +19,7 @@ import Beast
 import Monsters
 import Dialogue
 import GameTypes
+import Files
 
 -- NOTE: Curses is a wrapper for IO
 
@@ -31,19 +29,12 @@ main :: IO ()
 main = do
   args <- getArgs
 
-  -- Load the map file
-  let mapPath = if 1<=length args then head args else "./maps/map1.txt"
-  e <- tryJust (guard . isDoesNotExistError) (readFile mapPath)
-  let file = either (return ".") id e
-
-  -- Load the rule file
   let rulesPath = if 2<=length args then head $ tail args else "./maps/map1.rules"
-  fr <- readfile emptyCP rulesPath
-  let fileRules = either (return emptyCP) id fr
+  let mapPath = if 1<=length args then head args else "./maps/map1.txt"
 
-  -- Load the config file if provided
-  cp <- if 3 == length args then readfile emptyCP (args !! 2) else return (return emptyCP)
-  let configFile = either (return emptyCP) id cp
+  fileRules <- loadF mapPath
+  configFile <- if length args >= 3 then loadC (args !! 2) else return emptyCP
+  (b, map1) <- loadM mapPath fileRules
 
   runCurses $ do --Start
     setEcho False -- Disable echo
@@ -59,14 +50,13 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
-    let map1 = loadMap file (either (const $ Point 0 0) ( fromMaybe (Point 0 0) . R.readMaybe) $ get fileRules "GAME" "currul") --Init the map with screen size
     let player = Beast (getCharPos (levelMap map1) '@' 0 0) DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") True "Player"
     let game = Game map1 player (findActivated map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
 
     updateCamera mainWin game
     render
 
-    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $  either (const "Map not found") (const "Welcome") e )) -- Run mainLoop
+    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $ if b then "Welcome" else "Map not found")) -- Run mainLoop
 
 msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
