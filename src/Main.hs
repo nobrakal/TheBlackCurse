@@ -32,7 +32,7 @@ main = do
   let rulesPath = if 2<=length args then head $ tail args else "./maps/map1.rules"
   let mapPath = if 1<=length args then head args else "./maps/map1.txt"
 
-  fileRules <- loadF mapPath
+  fileRules <- loadF rulesPath  
   configFile <- if length args >= 3 then loadC (args !! 2) else return emptyCP
   (b, map1) <- loadM mapPath fileRules
 
