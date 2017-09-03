@@ -6,7 +6,8 @@ module Space
   dist,
   getRadiusFromPoint,
   getListOfPoint,
-  isNear
+  isNear,
+  signumFst
   ) where
 
 data Point = Point {y :: Int, x :: Int} deriving (Show, Eq, Read) -- To represent a point on the map
@@ -32,6 +33,11 @@ pointToDir (Point 1 0) = DOWN
 pointToDir (Point 0 (-1)) = LEFT
 pointToDir (Point 0 1) = RIGHT
 pointToDir _ = NULL
+
+signumFst :: Point -> Point
+signumFst p@(Point x 0) = signum p
+signumFst p@(Point 0 x) = signum p
+signumFst (Point y x) = Point (signum y) 0
 
 dist :: Point -> Point -> Int
 dist (Point x y) (Point x' y') = floor . sqrt $ xx^2 + yy^2

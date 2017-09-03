@@ -23,7 +23,7 @@ findMonsters' lm cp (x:xs) = Beast (getStrPos lm x 0 0) DOWN (either (const 0) i
 
 findMonstersInCp :: ConfigParser -> [SectionSpec]-> [SectionSpec]
 findMonstersInCp _ [] = []
-findMonstersInCp cp (x:xs) = if has_option cp x "hp" then x : findMonstersInCp cp xs else findMonstersInCp cp xs
+findMonstersInCp cp (x:xs) = if has_option cp x "hp" && x /= "PLAYER" then x : findMonstersInCp cp xs else findMonstersInCp cp xs
 
 findActivated :: Point -> ConfigParser -> Monsters -> Monsters
 findActivated _ _ [] = []

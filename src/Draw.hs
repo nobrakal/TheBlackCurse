@@ -4,7 +4,8 @@ module Draw
   makeBorders,
   getScreenSize,
   drawClearMsg',
-  getWindowSize
+  getWindowSize,
+  appendMsg
   )
 
 where
@@ -21,10 +22,18 @@ drawClearMsg win str = updateWindow win $ windowSize>>= \arg -> drawClearMsg' (P
 drawClearMsg' :: Point -> String -> Update ()
 drawClearMsg' y_x_width str = do
   clear
+  drawMsg y_x_width str
+
+appendMsg :: Window -> String -> Curses ()
+appendMsg win str = updateWindow win $ windowSize>>= \arg -> drawMsg (Point (fromIntegral (fst arg)) (fromIntegral (snd arg))) str
+
+drawMsg :: Point -> String -> Update ()
+drawMsg y_x_width str = do
   let winW = y y_x_width * x y_x_width
-  if length str <= winW
-     then drawString (init str) >> drawLineH (Just $ Glyph (last str) []) 1
+  if length str < winW
+     then drawString (init str)
      else drawString $ take (winW-1) str
+  if length str == winW then drawLineH (Just $ Glyph (last str) []) 1 else drawString [last str]
 
 -- Draw a tab of String
 drawTab :: Window -> Point -> [[String]] -> Curses ()

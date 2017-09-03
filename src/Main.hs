@@ -223,10 +223,15 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
 todoMonsters :: State -> State
 todoMonsters s@(State _ _ _ Nothing) = s
 
-todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status (Just todo')) = State com (game' {player = newplayer}) newstatus (Just newtodo)
+todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status (Just todo')) = State com newgame newstatus (Just newtodo)
   where
-    (newplayer,bobo) = todoMonsters' com game' (findActivated pos' rules' monsters') False
-    newtodo = todo' >> when bobo (drawClearMsg (msgWin com) $ "You were hit, you have now " ++ show (hp newplayer) ++ " hp" ) >> when isDead (drawClearMsg (msgWin  com) "You are dead" )
+    activated = findActivated pos' rules' monsters'
+    (newmap, newmonsters) = moveMonsters map1 pos' monsters' activated
+    (newplayer,bobo) = todoMonsters' com game' activated False
+    newgame = game' {player = newplayer, m = lm {levelMap=newmap}, monsters = newmonsters}
+    newtodo = todo' >>  when (newmonsters /= monsters') (updateCamera (mainWin com) newgame)
+      >> when bobo (appendMsg (msgWin com) $ "\nYou were hit, you have now " ++ show (hp newplayer) ++ " hp" )
+      >> when isDead (drawClearMsg (msgWin com) "You are dead" )
     isDead = hp newplayer <= 0
     newstatus = if isDead then Dead else MainGame
 
@@ -235,5 +240,14 @@ todoMonsters' _ g [] b = (player g, b)
 todoMonsters' com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ rules _) (x:xs) b = todoMonsters' com newgame xs $ isOk || b
   where
     isOk = isNear pos' $ pos x
-    bobo = if isOk then 1 else 0
-    newgame = game {player = if isOk then p {hp = hp' - dammage x} else p}
+    newgame = if isOk then game {player = p {hp = hp' - dammage x}} else game
+
+moveMonsters :: Map -> Point -> Monsters -> Monsters -> (Map,Monsters)
+moveMonsters m _ monst [] = (m,monst)
+moveMonsters m charpos monst (am@(Beast curr _ _ _ _ n):xs) = moveMonsters newmap charpos newmonst xs
+  where
+    isOk = isNear curr charpos
+    newpos@(Point y' x') = curr + signumFst (charpos - curr)
+    newmap = if isOk then m else moveCAtPos y' x' (head n) $ removeFirstCharAt (y curr) (x curr) m
+    pos = fromJust $ elemIndex am monst
+    newmonst = if isOk then monst else take pos monst ++ [am {pos=newpos}] ++ drop (pos+1) monst

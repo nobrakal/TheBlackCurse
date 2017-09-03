@@ -21,11 +21,11 @@ tosay: Welcome stranger, can I have a word ?
 wasdialogueyes: We already talked about that | END
 
 [PLAYER]
-dammage: 3
+dammage: 4
 hp: 10
 
 [Z.]
-activated: 3
+activated: 4
 dammage: 2
 hp: 10
 name: Zombi
