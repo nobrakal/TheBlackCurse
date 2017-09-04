@@ -165,6 +165,7 @@ testAndMoveC com game@(Game lm@(LevelMap _ currul) p _ _ _ ) s winsize = State c
       else drawClearMsg (msgWin com) "Could not move the camera"
 
 -- Test and run the player move
+-- TODO: see with move monsters the confluence
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
 testAndMoveP com@(Common stdscr mainWin msgWin _ _ _ k) game@(Game lm@(LevelMap map1 po) b _ rules _ ) s winsize = if isOk
   then testAndDoSomething (basestate $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
@@ -173,7 +174,7 @@ testAndMoveP com@(Common stdscr mainWin msgWin _ _ _ k) game@(Game lm@(LevelMap 
     newpos = pos b + dirToPoint s
     isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
     poskOkPlayer = if isOk then newpos else pos b
-    newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ removeFirstCharAt (y $ pos b) (x $ pos b)  map1
+    newmap = moveCAtPos (y poskOkPlayer) (x poskOkPlayer) '@' $ replaceByStr map1 (y $ pos b) (x $ pos b) [last $ getCellAt map1 $ pos b]
     g = game { player = b {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
     basestate = State com g MainGame
 

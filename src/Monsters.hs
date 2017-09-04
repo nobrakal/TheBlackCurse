@@ -81,12 +81,13 @@ todoMonsters' com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ 
     isOk = isNear pos' $ pos x
     newgame = if isOk then game {player = p {hp = hp' - dammage x}} else game
 
+-- TODO: don't superopose monsters
 moveMonsters :: Map -> Point -> Monsters -> Monsters -> (Map,Monsters)
 moveMonsters m _ monst [] = (m,monst)
 moveMonsters m charpos monst (am@(Beast curr _ _ _ _ n):xs) = moveMonsters newmap charpos newmonst xs
   where
     isOk = isNear curr charpos
     newpos@(Point y' x') = curr + signumFst (charpos - curr)
-    newmap = if isOk then m else moveCAtPos y' x' (head n) $ removeFirstCharAt (y curr) (x curr) m
+    newmap = if isOk then m else moveCAtPos y' x' (head n) $ replaceByStr m (y curr) (x curr) [last $ getCellAt m curr]
     pos = fromJust $ elemIndex am monst
     newmonst = if isOk then monst else take pos monst ++ [am {pos=newpos}] ++ drop (pos+1) monst

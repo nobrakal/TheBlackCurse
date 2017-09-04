@@ -1,7 +1,6 @@
 module Beast
     ( Beast (..),
     Monsters,
-    removeFirstCharAt,
     moveCAtPos,
     getStatus
     )
@@ -19,12 +18,6 @@ data Beast = Beast {pos :: Point,
   activated :: Int, -- radius
   name :: String
 } deriving (Show,Eq)
-
-removeFirstCharAt :: Int -> Int -> Map -> Map
-removeFirstCharAt y x tab=
-  let (posy, posy',posx,posx') = truncateAt y x tab
-      oldstr = (tab !! y) !! x
-  in posy ++ [posx ++ [tail oldstr] ++ posx'] ++ posy'
 
 -- Add a c at the pos
 moveCAtPos :: Int -> Int -> Char -> Map -> Map
