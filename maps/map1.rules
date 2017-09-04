@@ -4,7 +4,7 @@ tosay: It's dark here
 [GAME]
 cannotgothrough: Km+-|~IZZ
 cannotseethrough: +-|I
-currul: Point {y = 18, x = 0}
+currul: Point {y = 0, x = 0}
 msgwinheight: 7
 radius: 10
 

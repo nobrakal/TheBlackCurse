@@ -12,7 +12,8 @@ module LevelMap (
   canGoTrough,
   willDo,
   getRadius,
-  replaceByStr)
+  replaceByStr,
+  justifyRight)
 where
 
 import Space
@@ -27,11 +28,11 @@ data LevelMap = LevelMap {levelMap :: Map,
 
 loadMap :: String -> Point -> LevelMap
 loadMap file currul = do
-  let file_map = map (++ ["\n"]) $ map words $ lines file -- ++ [[" "]]
+  let file_map = map words $ lines file -- ++ [[" "]]
   LevelMap file_map currul
 
 toStr :: Map -> String
-toStr x= unlines $ map unwords $ map init x
+toStr x= unlines $ map unwords x
 
 getmaxLength :: [[a]] -> Int
 getmaxLength = foldr (max . length) 0
@@ -42,6 +43,12 @@ isOnDisplayableMap (LevelMap tab _) (Point y x) = (x>=0) && (y>=0) && (x < xw) &
   where
     yw = length tab
     xw = (-1) + length (head tab)
+
+justifyRight :: Int -> String -> String
+justifyRight k t
+    | len >= k  = t
+    | otherwise = t ++ replicate (k-len) ' '
+  where len = length t
 
 -- Reduce if possible the map to a map of (height,width) starting at (starty,startx)
 getCurrentDisplay :: [[String]] -> Point -> Point -> Map
@@ -83,7 +90,7 @@ willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
 getRadius :: Map -> ConfigParser -> Point -> Int -> Map
 getRadius map1 cf start radius_w = applyMask map1 emptyMap $ onlyExistingPoint map1 $ getRadiusFromPoint start radius_w
   where
-    emptyMap = replicate (length map1) ((++ ["\n"]) (replicate (length $ head map1) " "))
+    emptyMap = replicate (length map1) (replicate (length $ head map1) " ")
 
 applyMask :: [[String]] -> [[String]] -> [Point] -> [[String]]
 applyMask tab emptyMap [] = emptyMap
