@@ -71,7 +71,7 @@ You can assign to each id (so to each string on the map file) some options. The 
 [id]
 someoption=sometext
 
-To define a monster, you will have to specify a "hp" option. The combat will be run if and only if the dialogue option is absent of the section.
+Monster attributes (hp, dammage, activated, name) and tosay are subject to heritage. If the value is not set, the game will search for it in id that are prefix of the current. Example: if you have many zombies, you can specify all their attributes in [Z], and the program will run.
 
 Options avaible are:
 * tosay: Displayed when the character go through or interract with the object
@@ -82,5 +82,6 @@ Options avaible are:
 where action1 and action2 are option in the same section of the config file and "Text Disp" and "Text" are the texts displayed. lastoption is the parameter that will be used when the user attempt a new dialogue. By default his value is "dialogue". if set to END, the dialogue is definitly ended.
 
 * lastoption: Last option used in the dialogue, it will be diplayed if the player attempt a new dialogue
-* hp: Health points of the object. If an object has this attribute, and the dialogue is ended (lastoption set to END) or if there is no dialogue at all, the player can combat the object. MONSTERS MUST HAVE DIFFERENT IDs
+* hp: Health points of the object.
 * name: name of the object
+* monster: If an object has this attribute, and the dialogue is ended (lastoption set to END) or if there is no dialogue at all, the player can combat the object. MONSTERS MUST HAVE DIFFERENT IDs

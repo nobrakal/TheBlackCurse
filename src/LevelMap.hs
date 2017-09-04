@@ -10,15 +10,17 @@ module LevelMap (
   getStrPos,
   canInteractWith,
   canGoTrough,
-  willDo,
   getRadius,
   replaceByStr,
-  justifyRight)
+  justifyRight,
+  findWithPrefix)
 where
 
 import Space
 import Data.ConfigFile
 import Data.List
+
+import Data.Maybe (isJust)
 
 type Map = [[String]]
 
@@ -68,22 +70,25 @@ getStrPos tab@((x:xs):xs') s y x'
   | null xs = getStrPos xs' s (y+1) 0
   | otherwise = getStrPos (xs:xs') s y (x'+1)
 
+-- Find in config parser with prefix
+findWithPrefix :: ConfigParser -> OptionSpec -> SectionSpec -> String -> String
+findWithPrefix cp option section con = maybe con ( \x -> either (const con) id $ get cp x option) $ findPrefix cp option section
+
+findPrefix :: ConfigParser -> OptionSpec -> SectionSpec -> Maybe SectionSpec
+findPrefix _ _ [] = Nothing
+findPrefix cp option str = if has_section cp str && has_option cp str option then Just str else findPrefix cp option $ init str
+
 {- Interract things -}
 
 canInteractWith :: LevelMap -> Point -> ConfigParser -> String -> Bool
 canInteractWith lm p cp todo
- |isOnDisplayableMap lm p = has_option cp (getCellAt (levelMap lm) p) todo
+ |isOnDisplayableMap lm p = isJust $ findPrefix cp todo $ getCellAt (levelMap lm) p
  |otherwise = False
 
 canGoTrough :: LevelMap -> Point -> ConfigParser -> Bool
 canGoTrough (LevelMap map1 _) p cp
  | elem (head (getCellAt map1 p) ) $ either (const "") id $ get cp "GAME" "cannotgothrough" = False
  | otherwise = True
-
-willDo :: ConfigParser -> Map -> Point -> String -> String -> String
-willDo rules map1 p' sec str =either (const str) id $ get rules cell sec
-  where
-    cell = getCellAt map1 p'
 
 {- Radius things -}
  -- TODO Shadow part

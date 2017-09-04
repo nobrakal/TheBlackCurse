@@ -26,12 +26,19 @@ tosay: The man stared at you and drank his glass without saying a word.
 dammage: 4
 hp: 10
 
-[Z.]
+[Z]
 activated: 4
 dammage: 2
 hp: 10
 name: Zombi
 tosay: Aaarrrggghhhhh
+
+[Za.]
+monster: true
+[Zb.]
+monster: true
+[Zc.]
+monster: true
 
 [mflames]
 tosay: Seems warm and comfy

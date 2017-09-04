@@ -180,13 +180,13 @@ testAndMoveP com@(Common stdscr mainWin msgWin _ _ _ k) game@(Game lm@(LevelMap 
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: State -> Point -> State
 testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _ _ _) _ rules _) status action) p' = case status of
-  MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then action >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else action
+  MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then action >> drawClearMsg (msgWin com) (willDo' "Would speak with") else action
   Action | canInteractWith lm newpos rules "dialogue" && not (isEnded rules section) -> useInputKeyboardD com (game {dialogue = newDialogue rules "dialogue" section True }) (up $ keyboard com) p'
     | canInteractWith lm newpos rules "hp" -> hitMonster com game newpos
     | otherwise -> basestate $ drawClearMsg (msgWin com) "Cannot do anything"
   where
     newpos = pos + dirToPoint dir
-    willDo' =  willDo rules map1 newpos
+    willDo' =  findWithPrefix rules "tosay" (getCellAt map1 newpos)
     basestate = State com game MainGame
     section = getCellAt map1 newpos
 

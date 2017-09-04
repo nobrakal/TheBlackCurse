@@ -25,11 +25,11 @@ findMonsters (LevelMap lm _) cp = findMonsters' lm cp $ findMonstersInCp cp $ se
 
 findMonsters' :: Map -> ConfigParser -> [SectionSpec] -> Monsters
 findMonsters' _ _ [] = []
-findMonsters' lm cp (x:xs) = Beast (getStrPos lm x 0 0) DOWN (either (const 0) id $ get cp x "hp") (either (const 0) id $ get cp x "dammage") (either (const 0) id $ get cp x "activated") (either (const "no name") id $ get cp x "name") : findMonsters' lm cp xs
+findMonsters' lm cp (x:xs) = Beast (getStrPos lm x 0 0) DOWN (read $ findWithPrefix cp "hp" x "0") (read $ findWithPrefix cp "dammage" x "0") (read $ findWithPrefix cp "activated" x "0") (findWithPrefix cp "name" x "no name") : findMonsters' lm cp xs
 
 findMonstersInCp :: ConfigParser -> [SectionSpec]-> [SectionSpec]
 findMonstersInCp _ [] = []
-findMonstersInCp cp (x:xs) = if has_option cp x "hp" && x /= "PLAYER" then x : findMonstersInCp cp xs else findMonstersInCp cp xs
+findMonstersInCp cp (x:xs) = if has_option cp x "monster" && x /= "PLAYER" then x : findMonstersInCp cp xs else findMonstersInCp cp xs
 
 findActivated :: Point -> ConfigParser -> Monsters -> Monsters
 findActivated _ _ [] = []
