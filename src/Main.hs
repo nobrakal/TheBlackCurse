@@ -31,10 +31,11 @@ main = do
 
   let rulesPath = if 2<=length args then head $ tail args else "./maps/map1.rules"
   let mapPath = if 1<=length args then head args else "./maps/map1.txt"
+  let confPath = if length args >= 3 then Just (args !! 2) else Nothing
 
   fileRules <- loadF rulesPath
-  configFile <- if length args >= 3 then loadC (args !! 2) else return emptyCP
-  (b, map1) <- loadM mapPath fileRules
+  configFile <- maybe (return emptyCP) loadC confPath
+  (b,map1) <- loadM mapPath fileRules
 
   runCurses $ do --Start
     setEcho False -- Disable echo
@@ -50,20 +51,21 @@ main = do
     msgWin <- newWindow (toInteger $ y msdim) (toInteger $ x msdim) 1 1 -- msg window
     mainWin <- newWindow (toInteger $ y mwdim) (toInteger $ x mwdim) (toInteger $ msgWinHeight fileRules +1) 1 -- bottom window
 
-    let charpos = getCharPos (levelMap map1) '@' 0 0
-    let player = Beast charpos DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") 0 "Player"
-    let game = Game map1 player (findMonsters map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)
-
-    updateCamera mainWin game
     render
 
-    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (drawClearMsg msgWin $ if b then "Welcome" else "Map not found")) -- Run mainLoop
+    mainLoop $ start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1) -- Run mainLoop
 
 msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
 
 mainLoop :: State -> Curses ()
 mainLoop (State _ _ Quit _) = return ()
+
+mainLoop (State com@(Common stdscr mainWin msgWin mapPath rulesPath confPath k) _ Load _) = do
+  fileRules <- liftIO $ loadF rulesPath
+  (b,map1) <- liftIO $ loadM mapPath fileRules
+  configFile <- liftIO $ maybe (return emptyCP) loadC confPath
+  mainLoop $ start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1)
 
 mainLoop (State common' game' status todo')= do
   todo'
@@ -91,11 +93,12 @@ useInputSwitchStatus c g e status p  = case status of
   Dead -> useInputKeyboardDead c g e p
 
 useInputKeyboardMG :: Common -> Game -> Event -> Point -> State
-useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_width
+useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath _ k) game e y_x_width
   | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC com game (getDir k e) y_x_width
   | e `elem` [up k, down k, left k, right k] = todoMonsters $ testAndMoveP com game (getDir k e) y_x_width
   | e == action k = todoMonsters $ testAndDoSomething (basestate Action (return ())) y_x_width
   | e == view k = basestate MainGame $ drawClearMsg msgWin $ getStatus (player game)
+  | e == load k = basestate Load $ return () 
   | e == help k = basestate InDialogue $ drawClearMsg msgWin (show k) --TODO
   | e == save k = basestate MainGame $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate Quit $ return ()
@@ -104,7 +107,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
     basestate = State com game
 
 useInputKeyboardD :: Common -> Game -> Event -> Point -> State
-useInputKeyboardD com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
+useInputKeyboardD com@(Common _ mainWin msgWin _ _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == exit k = basestate MainGame $ drawClearMsg msgWin "Exiting the dialogue..."
   | isJust options && e `elem` take (length $ fromJust options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
   | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue action
@@ -117,14 +120,14 @@ useInputKeyboardD com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@
     action = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> drawClearMsg' x $ showDialogue d y (getDir k e) p
 
 useInputKeyboardDead :: Common -> Game -> Event -> Point -> State
-useInputKeyboardDead com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
+useInputKeyboardDead com@(Common _ mainWin msgWin _ _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == exit k = basestate Quit $ return ()
   | otherwise = basestate Dead $ drawClearMsg msgWin "You can only quit for now"
   where
     basestate = State com game
 
 runChoiceDialogue :: Common -> Game -> Event -> Point -> State
-runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
+runChoiceDialogue com@(Common _ mainWin msgWin _ _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
   | e == one k = run 1
   | e == two k = run 2
   | e == three k = run 3
@@ -135,7 +138,7 @@ runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@
       rules = setOrUnsetLastoption rules' section lastoption }) (up k) p
 
 updateScreenSize :: Common -> Game -> Point -> Curses ()
-updateScreenSize (Common stdscr mainWin msgWin _ _ _ ) game y_x_width =  do
+updateScreenSize (Common stdscr mainWin msgWin _ _ _ _ ) game y_x_width =  do
   updateWindow mainWin clear
   updateWindow msgWin clear
   let msdim = calculateMsgWinSize (rules game) y_x_width
@@ -172,7 +175,7 @@ testAndMoveC com game@(Game lm@(LevelMap _ currul) p _ _ _ ) s winsize = State c
 
 -- Test and run the player move
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
-testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b _ rules _ ) s winsize = if isOk
+testAndMoveP com@(Common stdscr mainWin msgWin _ _ _ k) game@(Game lm@(LevelMap map1 po) b _ rules _ ) s winsize = if isOk
   then testAndDoSomething (basestate $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
   else testAndDoSomething (basestate $ drawClearMsg msgWin "Cannot do anything") winsize
   where
@@ -248,3 +251,10 @@ moveMonsters m charpos monst (am@(Beast curr _ _ _ _ n):xs) = moveMonsters newma
     newmap = if isOk then m else moveCAtPos y' x' (head n) $ removeFirstCharAt (y curr) (x curr) m
     pos = fromJust $ elemIndex am monst
     newmonst = if isOk then monst else take pos monst ++ [am {pos=newpos}] ++ drop (pos+1) monst
+
+start :: Window -> Window -> Window -> FilePath -> FilePath -> Maybe FilePath -> ConfigParser -> ConfigParser -> (Bool, LevelMap) -> State
+start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1)= State (Common stdscr mainWin msgWin mapPath rulesPath confPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (drawClearMsg msgWin (if b then "Welcome" else "Map not found") >> updateCamera mainWin game)
+  where
+   charpos = getCharPos (levelMap map1) '@' 0 0
+   player = Beast charpos DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") 0 "Player"
+   game = Game map1 player (findMonsters map1 fileRules) fileRules (newDialogue fileRules "" "DEFAULT" True)

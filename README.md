@@ -34,6 +34,7 @@ On the KEYBOARD section, you can specify the following fileds:
 * save
 * help
 * quit
+* view
 
 with the following values:
 

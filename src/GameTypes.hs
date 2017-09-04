@@ -21,6 +21,7 @@ data Common = Common {
   msgWin :: Window,
   mapPath :: FilePath,
   rulesPath :: FilePath,
+  confPath :: Maybe FilePath,
   keyboard :: Keyboard
 }
 
@@ -39,4 +40,4 @@ data State = State {
   todo :: Curses ()
 }
 
-data Status = MainGame | InDialogue | Dead | Quit | Action deriving (Show, Eq) -- Action is used when we have to determine the status
+data Status = MainGame | InDialogue | Dead | Quit | Load | Action deriving (Show, Eq) -- Action is used when we have to determine the status
