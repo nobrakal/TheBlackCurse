@@ -7,7 +7,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad (when)
 import Data.ConfigFile
 import Data.Maybe
-import Data.List
+import Data.List (delete, elemIndex)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
@@ -55,9 +55,6 @@ main = do
 
     mainLoop $ start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1) -- Run mainLoop
 
-msgWinHeight :: ConfigParser -> Int
-msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
-
 mainLoop :: State -> Curses ()
 mainLoop (State _ _ Quit _) = return ()
 
@@ -98,7 +95,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath _ k) game e y_
   | e `elem` [up k, down k, left k, right k] = todoMonsters $ testAndMoveP com game (getDir k e) y_x_width
   | e == action k = todoMonsters $ testAndDoSomething (basestate Action (return ())) y_x_width
   | e == view k = basestate MainGame $ drawClearMsg msgWin $ getStatus (player game)
-  | e == load k = basestate Load $ return () 
+  | e == load k = basestate Load $ return ()
   | e == help k = basestate InDialogue $ drawClearMsg msgWin (show k) --TODO
   | e == save k = basestate MainGame $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate Quit $ return ()
@@ -149,12 +146,6 @@ updateScreenSize (Common stdscr mainWin msgWin _ _ _ _ ) game y_x_width =  do
   updateCamera mainWin game
   drawClearMsg msgWin "Resized"
 
-calculateMainWinSize :: ConfigParser -> Point -> Point
-calculateMainWinSize c (Point y x ) = Point (y - msgWinHeight c -2) (x-2)
-
-calculateMsgWinSize :: ConfigParser -> Point -> Point
-calculateMsgWinSize c (Point _ x ) = Point (msgWinHeight c - 2) (x-2)
-
 updateBorders :: ConfigParser -> Window -> Point -> Curses ()
 updateBorders c stdscr y_x_width = do
   updateWindow stdscr clear
@@ -186,15 +177,6 @@ testAndMoveP com@(Common stdscr mainWin msgWin _ _ _ k) game@(Game lm@(LevelMap 
     g = game { player = b {pos=poskOkPlayer,look=s}, m = lm {levelMap = newmap}}
     basestate = State com g MainGame
 
--- Move the camera (do not do any test)
-updateCamera :: Window -> Game -> Curses()
-updateCamera win (Game (LevelMap map1 p ) b _ rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
-  where
-    radius = either (const 0) read $ get rules "GAME" "radius"
-    actualmap = if 0 < radius
-      then getRadius map1 rules (pos b) radius
-      else map1
-
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: State -> Point -> State
 testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _ _ _) _ rules _) status action) p' = case status of
@@ -207,50 +189,6 @@ testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir 
     willDo' =  willDo rules map1 newpos
     basestate = State com game MainGame
     section = getCellAt map1 newpos
-
-hitMonster :: Common -> Game -> Point -> State
-hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) monsters' rules _) m_pos = State com newgame MainGame $ updateCamera (mainWin com) newgame >> drawClearMsg (msgWin com) msg
-  where
-    actual_monster = getBeast monsters' m_pos
-    newmonster = maybe Nothing (\x -> Just x {hp= hp x - dammage}) actual_monster
-    name' = maybe "noname" name actual_monster
-    isDead x = hp x <= 0
-    newmonsters = maybe monsters' (\x -> if isDead (fromJust newmonster) then delete x monsters' else fromJust newmonster : delete x monsters') actual_monster
-    newmap = maybe map1 (\x -> if isDead x then removeDead map1 [x] else map1) newmonster
-    msg = maybe "error" (\x -> if isDead x then name' ++ " is dead" else name' ++ " was hit") newmonster
-    newgame = game { m = lm {levelMap = newmap}, monsters = newmonsters }
-
--- Return the player after it was hit, and the number of hit
-todoMonsters :: State -> State
-todoMonsters s@(State _ (Game _ _ [] _ _) _ _) = s
-todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status todo') = State com newgame newstatus newtodo
-  where
-    activated = findActivated pos' rules' monsters'
-    (newmap, newmonsters) = moveMonsters map1 pos' monsters' activated
-    (newplayer,bobo) = todoMonsters' com game' activated False
-    newgame = game' {player = newplayer, m = lm {levelMap=newmap}, monsters = newmonsters}
-    newtodo = todo' >>  when (newmonsters /= monsters') (updateCamera (mainWin com) newgame)
-      >> when bobo (appendMsg (msgWin com) $ "\nYou were hit, you have now " ++ show (hp newplayer) ++ " hp" )
-      >> when isDead (drawClearMsg (msgWin com) "You are dead" )
-    isDead = hp newplayer <= 0
-    newstatus = if isDead then Dead else status
-
-todoMonsters' :: Common -> Game -> Monsters -> Bool -> (Beast, Bool)
-todoMonsters' _ g [] b = (player g, b)
-todoMonsters' com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ rules _) (x:xs) b = todoMonsters' com newgame xs $ isOk || b
-  where
-    isOk = isNear pos' $ pos x
-    newgame = if isOk then game {player = p {hp = hp' - dammage x}} else game
-
-moveMonsters :: Map -> Point -> Monsters -> Monsters -> (Map,Monsters)
-moveMonsters m _ monst [] = (m,monst)
-moveMonsters m charpos monst (am@(Beast curr _ _ _ _ n):xs) = moveMonsters newmap charpos newmonst xs
-  where
-    isOk = isNear curr charpos
-    newpos@(Point y' x') = curr + signumFst (charpos - curr)
-    newmap = if isOk then m else moveCAtPos y' x' (head n) $ removeFirstCharAt (y curr) (x curr) m
-    pos = fromJust $ elemIndex am monst
-    newmonst = if isOk then monst else take pos monst ++ [am {pos=newpos}] ++ drop (pos+1) monst
 
 start :: Window -> Window -> Window -> FilePath -> FilePath -> Maybe FilePath -> ConfigParser -> ConfigParser -> (Bool, LevelMap) -> State
 start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1)= State (Common stdscr mainWin msgWin mapPath rulesPath confPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (drawClearMsg msgWin (if b then "Welcome" else "Map not found") >> updateCamera mainWin game)

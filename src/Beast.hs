@@ -1,5 +1,6 @@
 module Beast
     ( Beast (..),
+    Monsters,
     removeFirstCharAt,
     moveCAtPos,
     getStatus
@@ -8,6 +9,8 @@ where
 
 import Space
 import LevelMap
+
+type Monsters = [Beast]
 
 data Beast = Beast {pos :: Point,
   look :: Direction,

@@ -12,7 +12,6 @@ import Space
 import Keyboard
 import LevelMap
 import Beast
-import Monsters
 import Dialogue
 
 data Common = Common {

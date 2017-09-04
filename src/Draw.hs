@@ -5,16 +5,41 @@ module Draw
   getScreenSize,
   drawClearMsg',
   getWindowSize,
-  appendMsg
+  appendMsg,
+  msgWinHeight,
+  calculateMainWinSize,
+  calculateMsgWinSize,
+  updateCamera
   )
 
 where
 
 import UI.NCurses
+import Data.ConfigFile
 import Data.List
 
 import Space
-import LevelMap (justifyRight)
+import LevelMap
+import GameTypes (Game (..))
+import Beast (pos)
+
+msgWinHeight :: ConfigParser -> Int
+msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
+
+calculateMainWinSize :: ConfigParser -> Point -> Point
+calculateMainWinSize c (Point y x ) = Point (y - msgWinHeight c -2) (x-2)
+
+calculateMsgWinSize :: ConfigParser -> Point -> Point
+calculateMsgWinSize c (Point _ x ) = Point (msgWinHeight c - 2) (x-2)
+
+-- Move the camera (do not do any test)
+updateCamera :: Window -> Game -> Curses()
+updateCamera win (Game (LevelMap map1 p ) b _ rules _) = getScreenSize >>= \x -> drawTab win (calculateMainWinSize rules x) (getCurrentDisplay actualmap p (calculateMainWinSize rules x))
+  where
+    radius = either (const 0) read $ get rules "GAME" "radius"
+    actualmap = if 0 < radius
+      then getRadius map1 rules (pos b) radius
+      else map1
 
 -- Draw a message on the window if possible (clear all before)
 drawClearMsg :: Window -> String -> Curses ()
