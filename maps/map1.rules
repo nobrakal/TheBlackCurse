@@ -2,8 +2,8 @@
 tosay: It's dark here
 
 [GAME]
-cannotgothrough: Km+-|~IZZ
-cannotseethrough: +-|I
+cannotgothrough: Km+-|~IZ/
+cannotseethrough: +-|I/
 currul: Point {y = 0, x = 0}
 msgwinheight: 7
 radius: 10
@@ -15,6 +15,12 @@ dialoguequit: You leaved me before I finished last time, please be more polite |
 dialogueyes: Thank you. Here is the story of the black plague... | wasdialogueyes
 tosay: Welcome stranger, can I have a word ?
 wasdialogueyes: We already talked about that | END
+
+[/board]
+tosay: It says: "Welcome to the lost walker". Kind of ironic...
+
+[Knoway]
+tosay: The man stared at you and drank his glass without saying a word.
 
 [PLAYER]
 dammage: 4
