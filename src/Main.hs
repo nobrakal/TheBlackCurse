@@ -162,7 +162,7 @@ updateBorders c stdscr y_x_width = do
 
 -- Test if we can move the camera then does it else say it cannot
 testAndMoveC :: Common -> Game -> Direction -> Point -> State
-testAndMoveC com game@(Game lm@(LevelMap _ currul) _ _ _ _ ) s winsize = State com game {m = lm {currul = if isOk then newul else currul}} MainGame action
+testAndMoveC com game@(Game lm@(LevelMap _ currul) p _ _ _ ) s winsize = State com game {m = lm {currul = if isOk then newul else currul}, player = p {look = s}} MainGame action
   where
     newul@(Point ny nx) = currul + dirToPoint s
     isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + Point (-1) (-1))
@@ -214,7 +214,7 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
     newmonster = maybe Nothing (\x -> Just x {hp= hp x - dammage}) actual_monster
     name' = maybe "noname" name actual_monster
     isDead x = hp x <= 0
-    newmonsters =  maybe monsters' (\x -> fromJust newmonster : delete x monsters') actual_monster
+    newmonsters = maybe monsters' (\x -> if isDead (fromJust newmonster) then delete x monsters' else fromJust newmonster : delete x monsters') actual_monster
     newmap = maybe map1 (\x -> if isDead x then removeDead map1 [x] else map1) newmonster
     msg = maybe "error" (\x -> if isDead x then name' ++ " is dead" else name' ++ " was hit") newmonster
     newgame = game { m = lm {levelMap = newmap}, monsters = newmonsters }
@@ -222,7 +222,7 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
 -- Return the player after it was hit, and the number of hit
 todoMonsters :: State -> State
 todoMonsters s@(State _ _ _ Nothing) = s
-
+todoMonsters s@(State _ (Game _ _ [] _ _) _ _) = s
 todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status (Just todo')) = State com newgame newstatus (Just newtodo)
   where
     activated = findActivated pos' rules' monsters'
