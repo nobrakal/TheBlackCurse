@@ -1,7 +1,8 @@
 module Beast
     ( Beast (..),
     removeFirstCharAt,
-    moveCAtPos
+    moveCAtPos,
+    getStatus
     )
 where
 
@@ -31,3 +32,6 @@ moveCAtPos y x c tab =
 
 truncateAt :: Int -> Int -> [[a]] -> ([[a]], [[a]], [a], [a])
 truncateAt y x tab = (take y tab,drop (y+1) tab, take x (tab !! y),drop (x+1) (tab !! y))
+
+getStatus :: Beast -> String
+getStatus (Beast _ _ h d _ n) = n ++ " has " ++ show h ++ " hp and will make " ++ show d ++ " dammages to h{is,er} opponents"

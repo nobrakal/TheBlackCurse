@@ -95,6 +95,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_
   | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC com game (getDir k e) y_x_width
   | e `elem` [up k, down k, left k, right k] = todoMonsters $ testAndMoveP com game (getDir k e) y_x_width
   | e == action k = todoMonsters $ testAndDoSomething (basestate Action (return ())) y_x_width
+  | e == view k = basestate MainGame $ drawClearMsg msgWin $ getStatus (player game)
   | e == help k = basestate InDialogue $ drawClearMsg msgWin (show k) --TODO
   | e == save k = basestate MainGame $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate Quit $ return ()

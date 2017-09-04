@@ -29,6 +29,7 @@ data Keyboard = Kbd {
   cLeft :: Event,
   cRight :: Event,
   action :: Event,
+  view :: Event,
   load :: Event,
   save :: Event,
   exit :: Event,
@@ -44,7 +45,7 @@ defaultKeyboard :: ConfigParser --default kbd
 defaultKeyboard = foldl (\x (y1,y2)-> either (const emptyCP) id $ set x "KEYBOARD" y1 y2) cp defaults
   where
     cp = either (const emptyCP) id $ add_section emptyCP "KEYBOARD"
-    defaults = [("up","z" ),("down","s"),("left","q"),("right","d")  ,("cUp","KeyUpArrow"), ("cDown", "KeyDownArrow"),("cLeft", "KeyLeftArrow"),("cRight", "KeyRightArrow"),("action", "e"),("load", "l"),("save", "m"),("exit", "ESC"),("help", "h"),("one", "1"),("two", "2"),("three", "3"),("four", "4"),("five", "5")]
+    defaults = [("up","z" ),("down","s"),("left","q"),("right","d")  ,("cUp","KeyUpArrow"), ("cDown", "KeyDownArrow"),("cLeft", "KeyLeftArrow"),("cRight", "KeyRightArrow"),("action", "e"),("view", "v"),("load", "l"),("save", "m"),("exit", "ESC"),("help", "h"),("one", "1"),("two", "2"),("three", "3"),("four", "4"),("five", "5")]
 
 -- Produce a function withe name that build a keyboard where evry record is set by func. Func will receive record names
 buildKeyboard' :: String -> (Exp -> [String] -> [Q Exp]) -> Q [Dec]
