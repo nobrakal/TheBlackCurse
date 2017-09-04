@@ -57,13 +57,15 @@ main = do
     updateCamera mainWin game
     render
 
-    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (Just $ drawClearMsg msgWin $ if b then "Welcome" else "Map not found")) -- Run mainLoop
+    mainLoop (State (Common stdscr mainWin msgWin mapPath rulesPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (drawClearMsg msgWin $ if b then "Welcome" else "Map not found")) -- Run mainLoop
 
 msgWinHeight :: ConfigParser -> Int
 msgWinHeight x = either (const 5) read $ get x "GAME" "msgwinheight"
 
 mainLoop :: State -> Curses ()
-mainLoop (State common' game' status (Just todo'))= do
+mainLoop (State _ _ Quit _) = return ()
+
+mainLoop (State common' game' status todo')= do
   todo'
   --drawClearMsg (msgWin common') $ show status
   render
@@ -71,18 +73,15 @@ mainLoop (State common' game' status (Just todo'))= do
   y_x_width <- getScreenSize
   mainLoop $ useInput common' game' status y_x_width inp
 
-
-mainLoop (State _ _ _ Nothing) = return ()
-
 -- Use the input
 useInput :: Common -> Game -> Status -> Point -> Maybe Event -> State
 useInput com game status y_x_width (Just e) = case e of
   (EventCharacter c) -> useInputSwitchStatus com game (EventCharacter c) status $ calculateMainWinSize (rules game) y_x_width
   (EventSpecialKey s) -> useInputSwitchStatus com game (EventSpecialKey s) status $ calculateMainWinSize (rules game) y_x_width
-  EventResized -> State com game MainGame $ Just $ updateScreenSize com game y_x_width
-  (EventUnknown s) -> State com game MainGame $ Just $ drawClearMsg (msgWin com) $"ERROR WITH EVENT" ++ show s  -- ERROR
-  s@_ -> State com game MainGame $ Just $ drawClearMsg (msgWin com) (show s)  -- Any other input
-useInput com g status _ s = State com g MainGame $ Just $ drawClearMsg (msgWin com) (show s)  -- Any other input
+  EventResized -> State com game MainGame $ updateScreenSize com game y_x_width
+  (EventUnknown s) -> State com game MainGame $ drawClearMsg (msgWin com) $"ERROR WITH EVENT" ++ show s  -- ERROR
+  s@_ -> State com game MainGame $ drawClearMsg (msgWin com) (show s)  -- Any other input
+useInput com g status _ s = State com g MainGame $ drawClearMsg (msgWin com) (show s)  -- Any other input
 
 -- Switch between Dialogue and MainGame input usage
 useInputSwitchStatus :: Common -> Game -> Event -> Status -> Point -> State
@@ -95,20 +94,20 @@ useInputKeyboardMG :: Common -> Game -> Event -> Point -> State
 useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath k) game e y_x_width
   | e `elem` [cUp k, cDown k, cLeft k, cRight k] = testAndMoveC com game (getDir k e) y_x_width
   | e `elem` [up k, down k, left k, right k] = todoMonsters $ testAndMoveP com game (getDir k e) y_x_width
-  | e == action k = todoMonsters $ testAndDoSomething (basestate Action Nothing) y_x_width
-  | e == help k = basestate InDialogue $ Just $ drawClearMsg msgWin (show k) --TODO
-  | e == save k = basestate MainGame $ Just $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
-  | e == exit k = basestate MainGame Nothing
-  | otherwise = basestate MainGame $ Just $ drawClearMsg msgWin $ "Command not found: " ++ show e
+  | e == action k = todoMonsters $ testAndDoSomething (basestate Action (return ())) y_x_width
+  | e == help k = basestate InDialogue $ drawClearMsg msgWin (show k) --TODO
+  | e == save k = basestate MainGame $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
+  | e == exit k = basestate Quit $ return ()
+  | otherwise = basestate MainGame $ drawClearMsg msgWin $ "Command not found: " ++ show e
   where
     basestate = State com game
 
 useInputKeyboardD :: Common -> Game -> Event -> Point -> State
 useInputKeyboardD com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
-  | e == exit k = basestate MainGame $ Just $ drawClearMsg msgWin "Exiting the dialogue..."
+  | e == exit k = basestate MainGame $ drawClearMsg msgWin "Exiting the dialogue..."
   | isJust options && e `elem` take (length $ fromJust options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
-  | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue $ Just action
-  | otherwise = basestate InDialogue $ Just $ drawClearMsg msgWin $"Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+  | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue action
+  | otherwise = basestate InDialogue $ drawClearMsg msgWin $"Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
     msg = calculateMsgWinSize rules' p
@@ -118,10 +117,10 @@ useInputKeyboardD com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@
 
 useInputKeyboardDead :: Common -> Game -> Event -> Point -> State
 useInputKeyboardDead com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
-  | e == exit k = basestate Nothing
-  | otherwise = basestate $ Just $ drawClearMsg msgWin "You can only quit for now"
+  | e == exit k = basestate Quit $ return ()
+  | otherwise = basestate Dead $ drawClearMsg msgWin "You can only quit for now"
   where
-    basestate = State com game Dead
+    basestate = State com game
 
 runChoiceDialogue :: Common -> Game -> Event -> Point -> State
 runChoiceDialogue com@(Common _ mainWin msgWin _ _ k) game@(Game _ _ _ rules' d@(Dialogue str pos section options lastoption)) e p
@@ -167,14 +166,14 @@ testAndMoveC com game@(Game lm@(LevelMap _ currul) p _ _ _ ) s winsize = State c
     newul@(Point ny nx) = currul + dirToPoint s
     isOk = isOnDisplayableMap lm newul && isOnDisplayableMap lm (newul + winsize + Point (-1) (-1))
     action = if isOk
-      then Just $ updateCamera (mainWin com) (game {m = lm {currul = newul}}) >> drawClearMsg (msgWin com) "Camera moved"
-      else Just $ drawClearMsg (msgWin com) "Could not move the camera"
+      then updateCamera (mainWin com) (game {m = lm {currul = newul}}) >> drawClearMsg (msgWin com) "Camera moved"
+      else drawClearMsg (msgWin com) "Could not move the camera"
 
 -- Test and run the player move
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
 testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b _ rules _ ) s winsize = if isOk
-  then testAndDoSomething (basestate $ Just $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
-  else testAndDoSomething (basestate Nothing) winsize
+  then testAndDoSomething (basestate $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
+  else testAndDoSomething (basestate $ return ()) winsize
   where
     newpos = pos b + dirToPoint s
     isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
@@ -195,20 +194,18 @@ updateCamera win (Game (LevelMap map1 p ) b _ rules _) = getScreenSize >>= \x ->
 -- Test if can do something, and if possible actually do it
 testAndDoSomething :: State -> Point -> State
 testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir _ _ _ _) _ rules _) status action) p' = case status of
-  MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then Just $ action' >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else cannot
+  MainGame -> basestate $ if canInteractWith lm newpos rules "tosay" then action >> drawClearMsg (msgWin com) (willDo' "tosay" "Would speak with") else action
   Action | canInteractWith lm newpos rules "dialogue" && not (isEnded rules section) -> useInputKeyboardD com (game {dialogue = newDialogue rules "dialogue" section True }) (up $ keyboard com) p'
     | canInteractWith lm newpos rules "hp" -> hitMonster com game newpos
-    | otherwise -> basestate cannot
+    | otherwise -> basestate $ drawClearMsg (msgWin com) "Cannot do anything"
   where
-    action' = fromMaybe (return ()) action
     newpos = pos + dirToPoint dir
-    cannot = if isJust action then action else Just $ action' >> drawClearMsg (msgWin com) "Cannot do anything"
     willDo' =  willDo rules map1 newpos
     basestate = State com game MainGame
     section = getCellAt map1 newpos
 
 hitMonster :: Common -> Game -> Point -> State
-hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) monsters' rules _) m_pos = State com newgame MainGame $ Just $ updateCamera (mainWin com) newgame >> drawClearMsg (msgWin com) msg
+hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) monsters' rules _) m_pos = State com newgame MainGame $ updateCamera (mainWin com) newgame >> drawClearMsg (msgWin com) msg
   where
     actual_monster = getBeast monsters' m_pos
     newmonster = maybe Nothing (\x -> Just x {hp= hp x - dammage}) actual_monster
@@ -221,9 +218,8 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
 
 -- Return the player after it was hit, and the number of hit
 todoMonsters :: State -> State
-todoMonsters s@(State _ _ _ Nothing) = s
 todoMonsters s@(State _ (Game _ _ [] _ _) _ _) = s
-todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status (Just todo')) = State com newgame newstatus (Just newtodo)
+todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status todo') = State com newgame newstatus newtodo
   where
     activated = findActivated pos' rules' monsters'
     (newmap, newmonsters) = moveMonsters map1 pos' monsters' activated

@@ -36,7 +36,7 @@ data State = State {
   common :: Common,
   game :: Game,
   status :: Status,
-  todo :: Maybe (Curses ())
+  todo :: Curses ()
 }
 
-data Status = MainGame | InDialogue | Dead | Action deriving (Show, Eq) -- Action is used when we have to determine the status
+data Status = MainGame | InDialogue | Dead | Quit | Action deriving (Show, Eq) -- Action is used when we have to determine the status
