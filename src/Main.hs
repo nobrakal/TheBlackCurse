@@ -173,7 +173,7 @@ testAndMoveC com game@(Game lm@(LevelMap _ currul) p _ _ _ ) s winsize = State c
 testAndMoveP :: Common -> Game -> Direction -> Point -> State
 testAndMoveP com@(Common stdscr mainWin msgWin _ _ k) game@(Game lm@(LevelMap map1 po) b _ rules _ ) s winsize = if isOk
   then testAndDoSomething (basestate $ updateCamera mainWin g>> drawClearMsg msgWin "Player moved") winsize
-  else testAndDoSomething (basestate $ return ()) winsize
+  else testAndDoSomething (basestate $ drawClearMsg msgWin "Cannot do anything") winsize
   where
     newpos = pos b + dirToPoint s
     isOk = isOnDisplayableMap (LevelMap map1 po) newpos && canGoTrough lm newpos rules
