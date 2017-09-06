@@ -39,4 +39,4 @@ data State = State {
   todo :: Curses ()
 }
 
-data Status = MainGame | InDialogue | Dead | Quit | Load | Action deriving (Show, Eq) -- Action is used when we have to determine the status
+data Status = MainGame | InDialogue | Dead | Quit | Load | Starting | Action deriving (Show, Eq) -- Action is used when we have to determine the status

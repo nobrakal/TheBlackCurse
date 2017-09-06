@@ -64,6 +64,13 @@ mainLoop (State com@(Common stdscr mainWin msgWin mapPath rulesPath confPath k) 
   configFile <- liftIO $ maybe (return emptyCP) loadC confPath
   mainLoop $ start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1)
 
+mainLoop (State common' game' Starting todo') = do
+  drawClearMsg (msgWin common') $ "Press any key to start the game\nYou can later view the keyboard configuration by pressing ("++ show (help $ keyboard common')++")"
+  drawClearMsg (mainWin common') $ either (const "Press any key...") id $ get (rules game') "GAME" "startdialogue"
+  render
+  getEvent (stdscr common') Nothing
+  mainLoop $ State common' game' MainGame todo'
+
 mainLoop (State common' game' status todo')= do
   todo'
   --drawClearMsg (msgWin common') $ show status
@@ -192,7 +199,7 @@ testAndDoSomething (State com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos dir 
     section = getCellAt map1 newpos
 
 start :: Window -> Window -> Window -> FilePath -> FilePath -> Maybe FilePath -> ConfigParser -> ConfigParser -> (Bool, LevelMap) -> State
-start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1)= State (Common stdscr mainWin msgWin mapPath rulesPath confPath (buildKeyboard $ merge defaultKeyboard configFile)) game MainGame (drawClearMsg msgWin (if b then "Welcome" else "Map not found") >> updateCamera mainWin game)
+start stdscr mainWin msgWin rulesPath mapPath confPath fileRules configFile (b, map1)= State (Common stdscr mainWin msgWin mapPath rulesPath confPath (buildKeyboard $ merge defaultKeyboard configFile)) game Starting (drawClearMsg msgWin (if b then "Welcome" else "Map not found") >> updateCamera mainWin game)
   where
    charpos = getCharPos (levelMap map1) '@' 0 0
    player = Beast charpos DOWN (either (const 10) id $ get fileRules "PLAYER" "hp") (either (const 2) id $ get fileRules "PLAYER" "dammage") 0 "Player"

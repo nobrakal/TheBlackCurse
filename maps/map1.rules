@@ -7,6 +7,7 @@ cannotseethrough: +-|I/
 currul: Point {y = 0, x = 0}
 msgwinheight: 7
 radius: 10
+startdialogue: You will play the 'Black Plague' scenario. Imagine an old world... You are in the south of France in XXXX
 
 [Karthur]
 dialogue: My name is Arthur. I am a kind of a druid here. I see a great power in your soul. Tell me something, will you listen to an old man tale ? | dialogueyes Yes | dialogueno No | dialoguequit
