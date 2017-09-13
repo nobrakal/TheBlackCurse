@@ -73,7 +73,6 @@ mainLoop (State common' game' Starting todo') = do
 
 mainLoop (State common' game' status todo')= do
   todo'
-  --drawClearMsg (msgWin common') $ show status
   render
   inp <- getEvent (stdscr common') Nothing
   y_x_width <- getScreenSize
@@ -103,7 +102,7 @@ useInputKeyboardMG com@(Common _ mainWin msgWin mapPath rulesPath _ k) game e y_
   | e == action k = todoMonsters $ testAndDoSomething (basestate Action (return ())) y_x_width
   | e == view k = basestate MainGame $ drawClearMsg msgWin $ getStatus (player game)
   | e == load k = basestate Load $ return ()
-  | e == help k = basestate InDialogue $ drawClearMsg msgWin (show k) --TODO
+  | e == help k = basestate InDialogue $ drawClearMsg msgWin (show k)
   | e == save k = basestate MainGame $ liftIO (writeFile mapPath (toStr $ levelMap $ m game) >> writeFile rulesPath (to_string $ either (const $ rules game) id $ set (rules game) "GAME" "currul" $ show $ currul (m game))) >> drawClearMsg msgWin "Saving..."
   | e == exit k = basestate Quit $ return ()
   | otherwise = basestate MainGame $ drawClearMsg msgWin $ "Command not found: " ++ show e

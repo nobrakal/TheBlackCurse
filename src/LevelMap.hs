@@ -29,9 +29,7 @@ data LevelMap = LevelMap {levelMap :: Map,
 }
 
 loadMap :: String -> Point -> LevelMap
-loadMap file currul = do
-  let file_map = map words $ lines file -- ++ [[" "]]
-  LevelMap file_map currul
+loadMap file currul = LevelMap (map words $ lines file) currul
 
 toStr :: Map -> String
 toStr x= unlines $ map unwords x

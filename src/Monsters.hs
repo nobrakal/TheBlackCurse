@@ -56,7 +56,7 @@ hitMonster com game@(Game lm@(LevelMap map1 _ ) p@(Beast _ dir _ dammage _ _) mo
     isDead x = hp x <= 0
     newmonsters = maybe monsters' (\x -> if isDead (fromJust newmonster) then delete x monsters' else fromJust newmonster : delete x monsters') actual_monster
     newmap = maybe map1 (\x -> if isDead x then removeDead map1 [x] else map1) newmonster
-    msg = maybe "error" (\x -> if isDead x then name' ++ " is dead" else name' ++ " was hit") newmonster
+    msg = maybe "error" (\x -> if isDead x then name' ++ " is dead" else name' ++ " was hit. It have now " ++ show (hp x) ++ "hp") newmonster
     newgame = game { m = lm {levelMap = newmap}, monsters = newmonsters }
 
 -- Return the player after it was hit, and the number of hit
