@@ -65,7 +65,7 @@ todoMonsters s@(State _ (Game _ _ [] _ _) _ _) = s
 todoMonsters (State com game'@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) monsters' rules' _) status todo') = State com newgame newstatus newtodo
   where
     activated = findActivated pos' rules' monsters'
-    (newmap, newmonsters) = moveMonsters map1 pos' monsters' activated
+    (newmap, newmonsters) = moveMonsters map1 pos' monsters' activated rules'
     (newplayer,bobo) = todoMonsters' com game' activated False
     newgame = game' {player = newplayer, m = lm {levelMap=newmap}, monsters = newmonsters}
     newtodo = todo' >>  when (newmonsters /= monsters') (updateCamera (mainWin com) newgame)
@@ -82,12 +82,13 @@ todoMonsters' com game@(Game lm@(LevelMap map1 _ ) p@(Beast pos' _ hp' _ _ _) _ 
     newgame = if isOk then game {player = p {hp = hp' - dammage x}} else game
 
 -- TODO: don't superopose monsters
-moveMonsters :: Map -> Point -> Monsters -> Monsters -> (Map,Monsters)
-moveMonsters m _ monst [] = (m,monst)
-moveMonsters m charpos monst (am@(Beast curr _ _ _ _ n):xs) = moveMonsters newmap charpos newmonst xs
+moveMonsters :: Map -> Point -> Monsters -> Monsters -> ConfigParser ->(Map,Monsters)
+moveMonsters m _ monst [] _ = (m,monst)
+moveMonsters m charpos monst (am@(Beast curr _ _ _ _ n):xs) rules = moveMonsters newmap charpos newmonst xs rules
   where
     isOk = isNear curr charpos
-    newpos@(Point y' x') = curr + signumFst (charpos - curr)
+    fstnewpos = curr + signumFst (charpos - curr)
+    newpos@(Point y' x') = if canGoTrough (LevelMap m (Point 0 0)) fstnewpos rules then fstnewpos else curr
     newmap = if isOk then m else moveCAtPos y' x' (head n) $ replaceByStr m (y curr) (x curr) [last $ getCellAt m curr]
     pos = fromJust $ elemIndex am monst
     newmonst = if isOk then monst else take pos monst ++ [am {pos=newpos}] ++ drop (pos+1) monst
