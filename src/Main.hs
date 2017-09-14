@@ -114,7 +114,7 @@ useInputKeyboardD com@(Common _ mainWin msgWin _ _ _ k) game@(Game _ _ _ rules' 
   | e == exit k = basestate MainGame $ drawClearMsg msgWin "Exiting the dialogue..."
   | isJust options && e `elem` take (length $ fromJust options) [one k, two k, three k, four k, five k] = runChoiceDialogue com game e p
   | e `elem` [up k, cUp k, down k, cDown k] = State com (game {rules =setOrUnsetLastoption rules' section lastoption, dialogue = d {charpos =  newpos}}) isInDialogue action
-  | otherwise = basestate InDialogue $ drawClearMsg msgWin $"Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
+  | otherwise = basestate InDialogue $ drawClearMsg msgWin $ "Command not found. Please exit the dialogue before (press " ++ show (exit k) ++ ")"
   where
     newpos = pos >>= \y -> updateWindow msgWin $ getWindowSize >>= \x -> return (getNewStartDialogue str y (getDir k e) x)
     msg = calculateMsgWinSize rules' p
